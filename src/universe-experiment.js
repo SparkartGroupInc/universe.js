@@ -34,7 +34,8 @@ Modular.prototype.request = function( options, callback ){
 			elClass( this.el ).remove('loading');
 			if( err ) elClass( this.el ).add('error');
 		}.bind( this ) );
-	} else {
+	}
+	else {
 		xhr({
 			uri: this.url,
 			cors: true
@@ -48,9 +49,24 @@ Modular.prototype.request = function( options, callback ){
 
 };
 
+Modular.prototpye.preprocess = function( data ){
+	try {
+		if( this.preprocessor ) data = this.preprocessor( data );
+	}
+	catch( err ){
+		if( err ) console.log('Error preprocessing module resource');
+	}
+	return data;
+};
+
 Modular.prototype.render = function( data ){
-	if( this.preprocessor ) data = this.preprocessor( data );
-	this.el.innerHTML = this.template( data );
+	data = this.preprocess( data );
+	try {
+		this.el.innerHTML = this.template( data );
+	}
+	catch( err ){
+		if( err ) console.log('Error rendering module');
+	}
 }
 
 module.exports = Modular;
