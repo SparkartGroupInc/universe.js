@@ -49,7 +49,7 @@ Modular.prototype.request = function( options, callback ){
 
 };
 
-Modular.prototpye.preprocess = function( data ){
+Modular.prototype.preprocess = function( data ){
 	try {
 		if( this.preprocessor ) data = this.preprocessor( data );
 	}
