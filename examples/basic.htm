@@ -20,7 +20,7 @@
 		var module_template = Handlebars.compile( module_template_text );
 		var module = new Modular({
 			el: '.module',
-			url: 'http://services.sparkart.net/api/v1/events?key='+ KEY,
+			url: 'https://services.sparkart.net/api/v1/events?key='+ KEY,
 			template: module_template,
 			preprocessor: function( data ){
 				data.title = 'Date & Time:';

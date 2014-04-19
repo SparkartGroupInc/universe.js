@@ -6,22 +6,22 @@ var gulpRename = require('gulp-rename');
 var gulpUglify = require('gulp-uglify');
 
 var minifyScript = function(){
-	gulp.src('universe-experiment.js')
+	gulp.src('universe.js')
 		.pipe( gulpUglify() )
-		.pipe( gulpRename('universe-experiment.min.js') )
+		.pipe( gulpRename('universe.min.js') )
 		.pipe( gulp.dest('./') );
 };
 
 gulp.task( 'browserify', function(){
 	// use watchify instead of gulp-browserify and gulp.watch
-	var bundler = watchify('./src/universe-experiment.js');
+	var bundler = watchify('./index.js');
 	bundler.transform('hbsfy');
 	var rebundle = function(){
 		var bundle = bundler.bundle({
-			standalone: 'Modular',
+			standalone: 'Universe',
 			debug: true
 		})
-			.pipe( vinylSource('universe-experiment.js') )
+			.pipe( vinylSource('universe.js') )
 			.pipe( gulp.dest('./') );
 		minifyScript();
 		return bundle;
