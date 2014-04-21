@@ -5,6 +5,10 @@ var sizzle = require('sizzle');
 var elClass = require('element-class');
 var jsonp = require('jsonp');
 var xhr = require('xhr');
+var Handlebars = require('hbsfy/runtime');
+var handlebars_helper = require('handlebars-helper');
+
+handlebars_helper.help( Handlebars );
 
 var Base = function( config ){
 	this.key = config.key || this.key;

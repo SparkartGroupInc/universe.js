@@ -1,9 +1,10 @@
 <ul class="listing">
 {{#events}}
 	<li>
+		{{#venue}}<h2>{{city}}, {{state}}</h2>{{/venue}}
 		<h3>{{title}}</h3>
+		<time>{{formatDate date "%b %-d"}}</time>
 		<p>{{description}}</p>
-		<time>{{date}}</time>
 	</li>
 {{/events}}
 </ul>
