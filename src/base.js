@@ -14,7 +14,7 @@ var Base = function( config ){
 	this.preprocessor = config.preprocessor;
 	domready( function(){
 		if( typeof this.el === 'string' ){
-			this.el = sizzle( this.el )[0];
+			this.el = sizzle( this.el );
 		}
 		this.request();
 	}.bind( this ) );
@@ -64,7 +64,9 @@ Base.prototype.preprocess = function( data ){
 Base.prototype.render = function( data ){
 	data = this.preprocess( data );
 	try {
-		this.el.innerHTML = this.template( data );
+		for( var i = this.el.length - 1; i >= 0; i-- ){
+			this.el[i].innerHTML = this.template( data );
+		}
 	}
 	catch( err ){
 		if( err ) console.log('Error rendering module');
