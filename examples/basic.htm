@@ -2,7 +2,7 @@
 <html>
 <head>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
-	<script src="../universe-experiment.js"></script>
+	<script src="../universe.js"></script>
 	<script id="module-template" type="script/template">
 		<ul>
 		{{#events}}
@@ -18,14 +18,8 @@
 		var KEY = '85fb2147-06bb-4923-9589-34b186a3899c';
 		var module_template_text = document.getElementById('module-template').innerText;
 		var module_template = Handlebars.compile( module_template_text );
-		var module = new Modular({
-			el: '.module',
-			url: 'https://services.sparkart.net/api/v1/events?key='+ KEY,
-			template: module_template,
-			preprocessor: function( data ){
-				data.title = 'Date & Time:';
-				return data;
-			}
+		var fanclub = new Universe({
+			api_key: KEY
 		});
 	</script>
 </head>
