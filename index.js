@@ -4,11 +4,6 @@ var API_BASE_URL = 'https://services.sparkart.net/api/v1/';
 var jsonp = require('jsonp');
 var xhr = require('xhr');
 
-// this.api_key
-// this.logged_in
-// this.account
-// this.fanclub
-
 var Universe = function( config ){
 	if( !config.api_key ){
 		throw new Error('api_key must be specified when instantiating a Universe');
