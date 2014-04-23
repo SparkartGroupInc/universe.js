@@ -19,7 +19,7 @@
 		var module_template_text = document.getElementById('module-template').innerText;
 		var module_template = Handlebars.compile( module_template_text );
 		var fanclub = new Universe({
-			api_key: KEY
+			key: KEY
 		});
 		fanclub.widget( 'event', {
 			el: '.event',

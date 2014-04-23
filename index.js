@@ -1,17 +1,14 @@
 var NO_OP = function(){};
-var API_BASE_URL = 'https://services.sparkart.net/api/v1/';
-
-var jsonp = require('jsonp');
-var xhr = require('xhr');
 
 var Event = require('./src/event.js');
 var Events = require('./src/events.js');
+var apiRequest = require('./src/api_request.js');
 
 var Universe = function( config ){
-	if( !config.api_key ){
-		throw new Error('api_key must be specified when instantiating a Universe');
+	if( !config.key ){
+		throw new Error('key must be specified when instantiating a Universe');
 	}
-	this.api_key = config.api_key;
+	this.key = config.key;
 	this.logged_in = null;
 	this.customer = null;
 	this.fanclub = null;
@@ -29,11 +26,11 @@ var Universe = function( config ){
 	};
 
 	// Check login status, so we can short-circuit other API requests if logged out
-	this.request( 'account/status', { jsonp: true }, function( err, response ){
+	apiRequest( 'account/status', this.key, { jsonp: true }, function( err, response ){
 		this.logged_in = response.logged_in;
 		// Request full account object from API if user is logged in
 		if( this.logged_in ){
-			fanclub.request( 'account', function( err, response ){
+			apiRequest( 'account', this.key, function( err, response ){
 				fanclub.customer = response ? response.customer : null;
 				fanclub.account_request_complete = true;
 				attemptInit();
@@ -46,7 +43,7 @@ var Universe = function( config ){
 	});
 
 	// Fetch initial Fanclub data from API
-	this.request( 'fanclub', function( err, response ){
+	apiRequest( 'fanclub', this.key, function( err, response ){
 		fanclub.fanclub = response ? response.fanclub : null;
 		fanclub.fanclub_request_complete = true;
 		attemptInit();
@@ -58,37 +55,6 @@ Universe.prototype.initialize = function(){
 	this.queuedWidgets();
 };
 
-// generate a request url from a given endpoint
-Universe.prototype.generateURLfromEndpoint = function( endpoint ){
-	return API_BASE_URL + endpoint +'?key='+ this.api_key;
-};
-
-// request data from an API endpoint
-Universe.prototype.request = function( endpoint, options, callback ){
-	if( typeof options === 'function' ){
-		callback = options;
-		options = {};
-	}
-	callback = callback || NO_OP;
-	var url = this.generateURLfromEndpoint( endpoint );
-
-	// Use JSONP if this is IE or option is set
-	if( typeof XDomainRequest === 'undefined' || options.jsonp ){
-		jsonp( url, function( err, data ){
-			callback( err, data );
-		});
-	}
-	else {
-		xhr({
-			uri: url,
-			cors: true
-		}, function( err, request, response ){
-			var data = JSON.parse( response );
-			callback( err, data );
-		});
-	}
-};
-
 // initialize a widget
 Universe.prototype.widget = function( name, options ){
 	// if the account or fanclub requests are still pending, queue this for later
@@ -96,7 +62,7 @@ Universe.prototype.widget = function( name, options ){
 		this.queued_widgets.push( [name,options] );
 		return;
 	}
-	options.key = this.api_key;
+	options.key = this.key;
 	switch( name ){
 	case 'event':
 		new Event( options );

@@ -3,16 +3,16 @@ var NO_OP = function(){};
 var domready = require('domready');
 var sizzle = require('sizzle');
 var elClass = require('element-class');
-var jsonp = require('jsonp');
-var xhr = require('xhr');
 var Handlebars = require('hbsfy/runtime');
 var handlebars_helper = require('handlebars-helper');
 
 handlebars_helper.help( Handlebars );
 
+var apiRequest = require('./api_request.js');
+
 var Base = function( config ){
 	this.key = config.key || this.key;
-	this.url = config.url || this.url;
+	this.endpoint = config.endpoint || this.endpoint;
 	this.el = config.el;
 	this.template = config.template || this.template || require('./test.hbs');
 	this.preprocessor = config.preprocessor;
@@ -25,34 +25,18 @@ var Base = function( config ){
 };
 
 Base.prototype.request = function( options, callback ){
+	var base = this;
 	if( typeof options === 'function' ){
 		callback = options;
 		options = {};
 	}
 	callback = callback || NO_OP;
 	elClass( this.el ).add('loading');
-	var url = ( typeof this.url === 'function' ) ? this.url() : this.url;
-
-	// Use JSONP if this is IE or option is set
-	if( typeof XDomainRequest === 'undefined' || options.jsonp ){
-		jsonp( url, function( err, data ){
-			this.render( data );
-			elClass( this.el ).remove('loading');
-			if( err ) elClass( this.el ).add('error');
-		}.bind( this ) );
-	}
-	else {
-		xhr({
-			uri: url,
-			cors: true
-		}, function( err, request, response ){
-			var data = JSON.parse( response );
-			this.render( data );
-			elClass( this.el ).remove('loading');
-			if( err ) elClass( this.el ).add('error');
-		}.bind( this ) );
-	}
-
+	apiRequest( this.endpoint, this.key, function( err, response ){
+		base.render( response );
+		elClass( this.el ).remove('loading');
+		if( err ) elClass( this.el ).add('error');
+	});
 };
 
 Base.prototype.preprocess = function( data ){
