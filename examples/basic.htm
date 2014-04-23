@@ -21,9 +21,13 @@
 		var fanclub = new Universe({
 			api_key: KEY
 		});
+		fanclub.widget( 'event', {
+			el: '.event',
+			id: 55
+		});
 	</script>
 </head>
 <body>
-	<div class="module"></div>
+	<div class="event module"></div>
 </body>
 </html>
