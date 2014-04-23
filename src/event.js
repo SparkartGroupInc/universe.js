@@ -1,7 +1,6 @@
 var EVENTS_ENDPOINT = 'events/';
 
-var util = require('util');
-var extend = require('extend');
+var inherits = require('inherits');
 var Base = require('./base.js');
 
 var events_template = require('./templates/event.hbs');
@@ -14,6 +13,6 @@ var Events = function( config ){
 	Base.call( this, config );
 };
 
-util.inherits( Events, Base );
+inherits( Events, Base );
 
 module.exports = Events;
