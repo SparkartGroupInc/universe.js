@@ -4,18 +4,16 @@
 	<script src="../universe.js"></script>
 	<script>
 		var KEY = '85fb2147-06bb-4923-9589-34b186a3899c';
-		var module = new Universe.Events({
-			key: KEY,
-			el: '.module',
-			preprocessor: function( data ){
-				data.title = 'Date & Time:';
-				return data;
-			}
+		var fanclub = new Universe({
+			key: KEY
+		});
+		fanclub.widget( 'events', {
+			el: '.events'
 		});
 	</script>
 </head>
 <body>
-	<div class="module"></div>
-	<div class="module"></div>
+	<div class="module events"></div>
+	<div class="module events"></div>
 </body>
 </html>
