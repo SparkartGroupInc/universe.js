@@ -91,7 +91,7 @@ Universe.prototype.request = function( endpoint, options, callback ){
 
 // initialize a widget
 Universe.prototype.widget = function( name, options ){
-	console.log('widget',name);
+	// if the account or fanclub requests are still pending, queue this for later
 	if( !( this.account_request_complete && this.fanclub_request_complete ) ){
 		this.queued_widgets.push( [name,options] );
 		return;
@@ -107,8 +107,8 @@ Universe.prototype.widget = function( name, options ){
 	}
 };
 
+// loop through queued widget initializaitons and initialize them all
 Universe.prototype.queuedWidgets = function(){
-	console.log( 'queued', this.queued_widgets );
 	for( var i = this.queued_widgets.length - 1; i >= 0; i-- ){
 		this.widget.apply( this, this.queued_widgets[i] );
 	}
