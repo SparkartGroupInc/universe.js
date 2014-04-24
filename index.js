@@ -3,6 +3,7 @@ var NO_OP = function(){};
 var Account = require('./src/account.js');
 var Event = require('./src/event.js');
 var Events = require('./src/events.js');
+var Plans = require('./src/plans.js');
 var apiRequest = require('./src/api_request.js');
 
 var Universe = function( config ){
@@ -73,6 +74,9 @@ Universe.prototype.widget = function( name, options ){
 	break;
 	case 'events':
 		new Events( options );
+	break;
+	case 'plans':
+		new Plans( options );
 	break;
 	}
 };
