@@ -33,6 +33,7 @@ Base.prototype.request = function( options, callback ){
 	callback = callback || NO_OP;
 	elClass( this.el ).add('loading');
 	apiRequest( this.endpoint, this.key, function( err, response ){
+		console.log('response',response);
 		base.render( response );
 		elClass( this.el ).remove('loading');
 		if( err ) elClass( this.el ).add('error');

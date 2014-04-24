@@ -1,5 +1,6 @@
 var NO_OP = function(){};
 
+var Account = require('./src/account.js');
 var Event = require('./src/event.js');
 var Events = require('./src/events.js');
 var apiRequest = require('./src/api_request.js');
@@ -64,6 +65,9 @@ Universe.prototype.widget = function( name, options ){
 	}
 	options.key = this.key;
 	switch( name ){
+	case 'account':
+		new Account( options );
+	break;
 	case 'event':
 		new Event( options );
 	break;
