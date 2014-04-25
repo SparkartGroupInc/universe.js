@@ -1,5 +1,6 @@
 var NO_OP = function(){};
 
+var Customer = require('./src/customer.js');
 var Account = require('./src/account.js');
 var Event = require('./src/event.js');
 var Events = require('./src/events.js');
@@ -65,7 +66,11 @@ Universe.prototype.widget = function( name, options ){
 		return;
 	}
 	options.key = this.key;
+	options.fanclub = this.fanclub;
 	switch( name ){
+	case 'customer':
+		new Customer( options );
+	break;
 	case 'account':
 		new Account( options );
 	break;
