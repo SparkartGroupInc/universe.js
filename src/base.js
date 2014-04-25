@@ -15,7 +15,7 @@ var Base = function( config ){
 	this.endpoint = config.endpoint || this.endpoint;
 	this.el = config.el;
 	this.template = config.template || this.template || require('./test.hbs');
-	this.preprocessor = config.preprocessor;
+	this.preprocessors = config.preprocessors || [];
 	domready( function(){
 		if( typeof this.el === 'string' ){
 			this.el = sizzle( this.el );
@@ -40,9 +40,15 @@ Base.prototype.request = function( options, callback ){
 	});
 };
 
+// loop through all preprocessors and return transformed data
 Base.prototype.preprocess = function( data ){
+	console.log( 'preprocessors', this.preprocessors );
 	try {
-		if( this.preprocessor ) data = this.preprocessor( data );
+		if( this.preprocessors.length > 0 ){
+			for( var i = this.preprocessors.length - 1; i >= 0; i-- ){
+				data = this.preprocessors[i]( data );
+			};
+		}
 	}
 	catch( err ){
 		if( err ) console.log('Error preprocessing module resource');
@@ -52,6 +58,7 @@ Base.prototype.preprocess = function( data ){
 
 Base.prototype.render = function( data ){
 	data = this.preprocess( data );
+	console.log('render data',data);
 	try {
 		for( var i = this.el.length - 1; i >= 0; i-- ){
 			this.el[i].innerHTML = this.template( data );
