@@ -6,10 +6,14 @@ var gulpRename = require('gulp-rename');
 var gulpUglify = require('gulp-uglify');
 
 var minifyScript = function(){
+	console.log('minifying script...');
 	gulp.src('universe.js')
 		.pipe( gulpUglify() )
 		.pipe( gulpRename('universe.min.js') )
-		.pipe( gulp.dest('./') );
+		.pipe( gulp.dest('./') )
+		.on( 'end', function(){
+			console.log('minification complete.');
+		});
 };
 
 gulp.task( 'browserify', function(){
@@ -22,8 +26,8 @@ gulp.task( 'browserify', function(){
 			debug: true
 		})
 			.pipe( vinylSource('universe.js') )
-			.pipe( gulp.dest('./') );
-		minifyScript();
+			.pipe( gulp.dest('./') )
+			.on( 'end', minifyScript );
 		return bundle;
 	};
 	bundler.on( 'update', rebundle );
