@@ -1,5 +1,6 @@
 var EVENTS_ENDPOINT = 'events/';
 
+var extend = require('extend');
 var inherits = require('inherits');
 var Base = require('./base.js');
 
