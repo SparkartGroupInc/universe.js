@@ -1,13 +1,13 @@
 var CUSTOMER_ENDPOINT = 'account/';
 
-var extend = require('extend');
+var $ = require('jquery');
 var inherits = require('inherits');
 var Base = require('./base.js');
 
 var customer_template = require('./templates/customer.hbs');
 
 var Customer = function( config ){
-	config = extend( config, {
+	config = $.extend( config, {
 		endpoint: CUSTOMER_ENDPOINT,
 		template: customer_template
 	});
