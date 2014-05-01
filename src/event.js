@@ -1,6 +1,6 @@
 var EVENTS_ENDPOINT = 'events/';
 
-var $ = require('jquery');
+$ = require('jquery');
 var inherits = require('inherits');
 var Base = require('./base.js');
 
