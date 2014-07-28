@@ -1,8 +1,8 @@
 {
-  "name": "universe-experiment",
-  "version": "0.0.0",
-  "description": "",
-  "main": "universe-experiment.js",
+  "name": "universe",
+  "version": "0.1.0",
+  "description": "Javascript modules for interacting with Sparkart's Universe API.",
+  "main": "universe.js",
   "author": "",
   "devDependencies": {
     "vinyl-source-stream": "~0.1.1",
@@ -25,7 +25,9 @@
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "^0.2.1",
     "inherits": "^2.0.1",
-    "extend": "^1.2.1",
+    "extend": "^1.2.1"
+  },
+  "dependencies": {
     "jquery": "^2.1.0"
   }
 }
