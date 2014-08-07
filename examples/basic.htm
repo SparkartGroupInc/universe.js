@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
-	<script src="../universe.js"></script>
-	<script id="module-template" type="script/template">
-		<ul>
-		{{#events}}
-			<li>
-				<h3>{{title}}</h3>
-				<p>{{description}}</p>
-				<time>{{date}}</time>
-			</li>
-		{{/events}}
-		</ul>
-	</script>
-	<script>
-		var KEY = '85fb2147-06bb-4923-9589-34b186a3899c';
-		var module_template_text = document.getElementById('module-template').innerText;
-		var module_template = Handlebars.compile( module_template_text );
-		var fanclub = new Universe({
-			key: KEY
-		});
-		fanclub.widget( 'event', {
-			el: '.event',
-			id: 55
-		});
-	</script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
+  <script src="../universe.js"></script>
+  <script id="module-template" type="script/template">
+    <ul>
+    {{#events}}
+      <li>
+        <h3>{{title}}</h3>
+        <p>{{description}}</p>
+        <time>{{date}}</time>
+      </li>
+    {{/events}}
+    </ul>
+  </script>
+  <script>
+    var KEY = '85fb2147-06bb-4923-9589-34b186a3899c';
+    var module_template_text = document.getElementById('module-template').innerText;
+    var module_template = Handlebars.compile( module_template_text );
+    var fanclub = new Universe({
+      key: KEY
+    });
+    fanclub.widget( 'event', {
+      el: '.event',
+      id: 55
+    });
+  </script>
 </head>
 <body>
-	<div class="event module"></div>
+  <div class="event module"></div>
 </body>
 </html>
