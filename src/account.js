@@ -43,6 +43,7 @@ Account.prototype.bindEvents = function(){
 
 		apiRequest( 'account', this.key, {
 			method: 'post',
+			api_url: this.api_url,
 			data: form_data
 		}, function( err, response ){
 			console.log('post response',err,response);

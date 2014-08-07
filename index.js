@@ -12,6 +12,7 @@ var Universe = function( config ){
 		throw new Error('key must be specified when instantiating a Universe');
 	}
 	this.key = config.key;
+	this.api_url = config.api_url;
 	this.logged_in = null;
 	this.customer = null;
 	this.fanclub = null;
@@ -29,11 +30,11 @@ var Universe = function( config ){
 	};
 
 	// Check login status, so we can short-circuit other API requests if logged out
-	apiRequest( 'account/status', this.key, { jsonp: true }, function( err, response ){
+	apiRequest( 'account/status', this.key, { jsonp: true, api_url: this.api_url }, function( err, response ){
 		this.logged_in = response.logged_in;
 		// Request full account object from API if user is logged in
 		if( this.logged_in ){
-			apiRequest( 'account', this.key, function( err, response ){
+			apiRequest( 'account', this.key, { api_url: this.api_url }, function( err, response ){
 				fanclub.customer = response ? response.customer : null;
 				fanclub.account_request_complete = true;
 				attemptInit();
@@ -46,7 +47,7 @@ var Universe = function( config ){
 	});
 
 	// Fetch initial Fanclub data from API
-	apiRequest( 'fanclub', this.key, function( err, response ){
+	apiRequest( 'fanclub', this.key, { api_url: this.api_url }, function( err, response ){
 		fanclub.fanclub = response ? response.fanclub : null;
 		fanclub.fanclub_request_complete = true;
 		attemptInit();
@@ -66,6 +67,7 @@ Universe.prototype.widget = function( name, options ){
 		return;
 	}
 	options.key = this.key;
+	options.api_url = this.api_url;
 	options.fanclub = this.fanclub;
 	switch( name ){
 	case 'customer':

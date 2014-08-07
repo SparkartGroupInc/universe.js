@@ -1,5 +1,4 @@
 var NO_OP = function(){};
-var API_BASE_URL = 'https://staging.services.sparkart.net/api/v1/';
 
 var jsonp = require('jsonp');
 var xhr = require('xhr');
@@ -10,7 +9,8 @@ module.exports = function( endpoint, key, options, callback ){
 		options = {};
 	}
 	callback = callback || NO_OP;
-	var url = API_BASE_URL + endpoint +'?key='+ key;
+	var base_url = options.api_url || 'https://services.sparkart.net/api/v1/';
+	var url = base_url + endpoint +'?key='+ key;
 
 	// Use JSONP if this is IE or option is set
 	if( typeof XDomainRequest === 'undefined' || options.jsonp ){

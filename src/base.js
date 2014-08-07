@@ -12,6 +12,7 @@ var Base = function( config ){
 	var base = this;
 	this.key = config.key || this.key;
 	this.endpoint = config.endpoint || this.endpoint;
+	this.api_url = config.api_url || this.api_url;
 	this.el = config.el;
 	this.template = config.template || this.template || require('./test.hbs');
 	this.preprocessors = config.preprocessors || [];
@@ -31,7 +32,7 @@ Base.prototype.request = function( options, callback ){
 	}
 	callback = callback || NO_OP;
 	this.$el.addClass('loading');
-	apiRequest( this.endpoint, this.key, function( err, response ){
+	apiRequest( this.endpoint, this.key, { api_url: this.api_url }, function( err, response ){
 		console.log('response',response);
 		base.render( response );
 		base.$el.removeClass('loading');
