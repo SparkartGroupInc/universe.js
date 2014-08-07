@@ -26,9 +26,7 @@
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "^0.2.1",
     "inherits": "^2.0.1",
-    "extend": "^1.2.1"
-  },
-  "dependencies": {
+    "extend": "^1.2.1",
     "jquery": "^2.1.0"
   }
 }
