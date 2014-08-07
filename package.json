@@ -2,6 +2,7 @@
   "name": "universe",
   "version": "0.1.0",
   "description": "Javascript modules for interacting with Sparkart's Universe API.",
+  "private": true,
   "main": "universe.js",
   "author": "",
   "devDependencies": {

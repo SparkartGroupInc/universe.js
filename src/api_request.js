@@ -1,5 +1,5 @@
 var NO_OP = function(){};
-var API_BASE_URL = 'https://services.sparkart.net/api/v1/';
+var API_BASE_URL = 'https://staging.services.sparkart.net/api/v1/';
 
 var jsonp = require('jsonp');
 var xhr = require('xhr');
