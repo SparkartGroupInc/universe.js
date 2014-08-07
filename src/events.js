@@ -7,11 +7,11 @@ var Base = require('./base.js');
 var events_template = require('./templates/events.hbs');
 
 var Events = function( config ){
-	config = $.extend( config, {
-		endpoint: EVENTS_ENDPOINT,
-		template: events_template
-	})
-	Base.call( this, config );
+  config = $.extend( config, {
+    endpoint: EVENTS_ENDPOINT,
+    template: events_template
+  });
+  Base.call( this, config );
 };
 
 util.inherits( Events, Base );
