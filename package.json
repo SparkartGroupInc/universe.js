@@ -1,31 +1,42 @@
 {
-  "name": "universe-experiment",
+  "name": "universejs",
   "version": "0.0.0",
-  "description": "",
-  "main": "universe-experiment.js",
-  "author": "",
+  "main": "index.js",
+  "author": {
+    "name": "Joannic Laborde",
+    "email": "joannic@sparkart.com",
+    "url": "http://www.sparkart.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SparkartGroupInc/universe.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SparkartGroupInc/universe.js.git"
+  },
+  "scripts": {
+    "build": "./node_modules/.bin/gulp build",
+    "test": "./node_modules/.bin/gulp test",
+    "node-test": "./node_modules/.bin/gulp node-test",
+    "browser-test": "./node_modules/.bin/gulp browser-test",
+    "test-server": "./node_modules/.bin/gulp test-server"
+  },
+  "dependencies": {
+    "solidus-client": "^1.0.0"
+  },
   "devDependencies": {
-    "vinyl-source-stream": "~0.1.1",
-    "gulp": "~3.5.2",
-    "handlebars": "~1.3.0",
-    "hbsfy": "~1.3.2",
-    "watchify": "~0.6.1",
-    "request": "~2.34.0",
-    "browser-request": "~0.3.1",
-    "uglifyify": "~1.2.2",
-    "domready": "~1.0.3",
-    "type-of": "~2.0.1",
-    "sizzle": "~1.1.0",
-    "jsonp": "git+https://github.com/LearnBoost/jsonp",
-    "element-class": "~0.1.0",
-    "hyperquest": "~0.2.0",
-    "xhr": "~1.3.1",
-    "ecstatic": "^0.5.1",
-    "handlebars-helper": "0.0.11",
-    "gulp-rename": "^1.2.0",
-    "gulp-uglify": "^0.2.1",
-    "inherits": "^2.0.1",
-    "extend": "^1.2.1",
-    "jquery": "^2.1.0"
+    "handlebars": "~2.0.0",
+    "nock": "~0.48.0",
+    "gulp": "~3.8.8",
+    "gulp-util": "~3.0.1",
+    "gulp-mocha": "~1.1.1",
+    "gulp-browserify": "~0.5.0",
+    "gulp-derequire": "~2.0.0",
+    "gulp-rename": "~1.2.0",
+    "run-sequence": "~1.0.1",
+    "browserstacktunnel-wrapper": "~1.3.1",
+    "browserstack-webdriver": "~2.41.1",
+    "underscore": "~1.7.0"
   }
 }
