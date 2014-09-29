@@ -1,97 +1,87 @@
-var NO_OP = function(){};
+var SolidusClient = require('solidus-client');
 
-var Customer = require('./src/customer.js');
-var Account = require('./src/account.js');
-var Event = require('./src/event.js');
-var Events = require('./src/events.js');
-var Plans = require('./src/plans.js');
-var apiRequest = require('./src/api_request.js');
-
-var Universe = function( config ){
-	if( !config.key ){
-		throw new Error('key must be specified when instantiating a Universe');
-	}
-	this.key = config.key;
-	this.logged_in = null;
-	this.customer = null;
-	this.fanclub = null;
-	this.account_request_complete = false;
-	this.fanclub_request_complete = false;
-	this.queued_widgets = [];
-
-	var fanclub = this;
-
-	// attempt to run fanclub.initialize
-	var attemptInit = function(){
-		if( fanclub.account_request_complete && fanclub.fanclub_request_complete ){
-			fanclub.initialize();
-		}
-	};
-
-	// Check login status, so we can short-circuit other API requests if logged out
-	apiRequest( 'account/status', this.key, { jsonp: true }, function( err, response ){
-		this.logged_in = response.logged_in;
-		// Request full account object from API if user is logged in
-		if( this.logged_in ){
-			apiRequest( 'account', this.key, function( err, response ){
-				fanclub.customer = response ? response.customer : null;
-				fanclub.account_request_complete = true;
-				attemptInit();
-			});
-		// Skip account request if user is not logged in
-		} else {			
-			fanclub.account_request_complete = true;
-			attemptInit();
-		}
-	});
-
-	// Fetch initial Fanclub data from API
-	apiRequest( 'fanclub', this.key, function( err, response ){
-		fanclub.fanclub = response ? response.fanclub : null;
-		fanclub.fanclub_request_complete = true;
-		attemptInit();
-	});
+var API_URLS = {
+  staging:    'http://staging.services.sparkart.net/api/v1',
+  production: 'http://services.sparkart.net/api/v1'
 };
 
-Universe.prototype.initialize = function(){
-	console.log('initialize fanclub!', this);
-	this.queuedWidgets();
+var Universe = function() {
+  if (!(this instanceof Universe)) return new Universe();
+
+  this.environment    = 'production';
+  this.context        = {};
+  this.solidus_client = new SolidusClient();
 };
 
-// initialize a widget
-Universe.prototype.widget = function( name, options ){
-	// if the account or fanclub requests are still pending, queue this for later
-	if( !( this.account_request_complete && this.fanclub_request_complete ) ){
-		this.queued_widgets.push( [name,options] );
-		return;
-	}
-	options.key = this.key;
-	options.fanclub = this.fanclub;
-	switch( name ){
-	case 'customer':
-		new Customer( options );
-	break;
-	case 'account':
-		new Account( options );
-	break;
-	case 'event':
-		new Event( options );
-	break;
-	case 'events':
-		new Events( options );
-	break;
-	case 'plans':
-		new Plans( options );
-	break;
-	}
+Universe.prototype.ready = function(callback) {
+  var self = this;
+
+  self.context.universe || (self.context.universe = {});
+  self.getFanclub(function(fanclub) {
+    self.context.universe.fanclub = fanclub;
+    self.getCustomer(function(customer) {
+      self.context.universe.customer = customer;
+
+      self.solidus_client.context = self.context;
+      callback();
+    });
+  });
 };
 
-// loop through queued widget initializaitons and initialize them all
-Universe.prototype.queuedWidgets = function(){
-	for( var i = this.queued_widgets.length - 1; i >= 0; i-- ){
-		this.widget.apply( this, this.queued_widgets[i] );
-	}
-	this.queued_widgets = [];
+Universe.prototype.getFanclub = function(callback) {
+  if (this.context.resources && this.context.resources.fanclub) {
+    callback(this.context.resources.fanclub.fanclub);
+  } else {
+    this.getResource('/fanclub', function(err, data) {
+      callback(data.fanclub);
+    });
+  }
 };
+
+Universe.prototype.getCustomer = function(callback) {
+  var self = this;
+  self.getJsonpResource('/account/status', function(err, data) {
+    if (data.logged_in) {
+      self.getResource('/account', function(err, data) {
+        callback(data.customer);
+      });
+    } else {
+      callback();
+    }
+  });
+};
+
+Universe.prototype.getResource = function(endpoint, callback) {
+  this.solidus_client.getResource(this.resource(endpoint), null, callback);
+};
+
+Universe.prototype.getJsonpResource = function(endpoint, callback) {
+  this.solidus_client.getResource(this.jsonpResource(endpoint), null, callback);
+};
+
+Universe.prototype.resource = function(endpoint) {
+  return {
+    url: this.api_url(endpoint),
+    query: {
+      key: this.api_key
+    },
+    with_credentials: true
+  };
+};
+
+Universe.prototype.jsonpResource = function(endpoint) {
+  return {
+    url: this.api_url(endpoint),
+    jsonp: true
+  };
+};
+
+Universe.prototype.api_url = function(endpoint) {
+  return (API_URLS[this.environment] || API_URLS['production']) + endpoint;
+};
+
+Universe.prototype.render = function() {
+  return this.solidus_client.render.apply(this.solidus_client, arguments);
+}
 
 module.exports = Universe;

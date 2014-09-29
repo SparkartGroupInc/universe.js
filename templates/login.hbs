@@ -1,0 +1,8 @@
+<div>
+  {{#if universe.customer}}
+    <a href="{{universe.fanclub.links.logout}}">Logout!</a>
+  {{else}}
+    <a href="/join">Join!</a> /
+    <a href="{{universe.fanclub.links.login}}?redirect={{encode url.href}}">Login!</a>
+  {{/if}}
+</div>

@@ -1,9 +1,0 @@
-{{# customer }}
-<em>Hi, {{ username }}</em>
-{{# subscription.plan }}<strong class="{{ className }}">{{ shortName }}</strong>{{/ subscription.plan }}
-<a href="{{ ../fanclub.links.logout }}">Logout</a>
-{{/ customer }}
-
-{{^ customer }}
-<a href="{{ fanclub.links.login }}">Login</a>
-{{/ customer }}
