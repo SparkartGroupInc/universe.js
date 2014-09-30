@@ -1,8 +1,8 @@
 var SolidusClient = require('solidus-client');
 
 var API_URLS = {
-  staging:    'http://staging.services.sparkart.net/api/v1',
-  production: 'http://services.sparkart.net/api/v1'
+  staging:    'https://staging.services.sparkart.net/api/v1',
+  production: 'https://services.sparkart.net/api/v1'
 };
 
 var Universe = function() {
