@@ -22,10 +22,10 @@ Universe.prototype.ready = function(callback) {
 
   self.context.universe || (self.context.universe = {});
 
-  self.getFanclub(function(fanclub) {
+  getFanclub.call(self, function(fanclub) {
     self.context.universe.fanclub = fanclub;
 
-    self.getCustomer(function(customer) {
+    getCustomer.call(self, function(customer) {
       self.context.universe.customer = customer;
 
       callback();
@@ -33,7 +33,39 @@ Universe.prototype.ready = function(callback) {
   });
 };
 
-Universe.prototype.getFanclub = function(callback) {
+Universe.prototype.view = function(view) {
+  for (var name in view.resources) {
+    var resource = view.resources[name];
+    if (typeof resource === 'string' && resource[0] === '/') {
+      resource = this.resource(resource);
+    } else if (resource !== null && typeof resource === 'object' && typeof resource.url === 'string' && resource.url[0] === '/') {
+      resource.url = resourceUrl.call(this, resource.url);
+    }
+    view.resources[name] = resource;
+  }
+  return SolidusClient.prototype.view.call(this, view);
+};
+
+Universe.prototype.resource = function(endpoint) {
+  return {
+    url: resourceUrl.call(this, endpoint),
+    query: {
+      key: this.key
+    },
+    with_credentials: true
+  };
+};
+
+Universe.prototype.jsonpResource = function(endpoint) {
+  return {
+    url: resourceUrl.call(this, endpoint),
+    jsonp: true
+  };
+};
+
+// PRIVATE
+
+var getFanclub = function(callback) {
   if (this.context.resources && this.context.resources.fanclub) {
     callback(this.context.resources.fanclub.fanclub);
   } else {
@@ -43,7 +75,7 @@ Universe.prototype.getFanclub = function(callback) {
   }
 };
 
-Universe.prototype.getCustomer = function(callback) {
+var getCustomer = function(callback) {
   var self = this;
   self.getResource(self.jsonpResource('/account/status'), null, function(err, data) {
     if (data.logged_in) {
@@ -56,38 +88,8 @@ Universe.prototype.getCustomer = function(callback) {
   });
 };
 
-Universe.prototype.resource = function(endpoint) {
-  return {
-    url: this.resourceUrl(endpoint),
-    query: {
-      key: this.key
-    },
-    with_credentials: true
-  };
-};
-
-Universe.prototype.jsonpResource = function(endpoint) {
-  return {
-    url: this.resourceUrl(endpoint),
-    jsonp: true
-  };
-};
-
-Universe.prototype.resourceUrl = function(endpoint) {
+var resourceUrl = function(endpoint) {
   return (API_URLS[this.environment] || API_URLS['production']) + endpoint;
-};
-
-Universe.prototype.view = function(view) {
-  for (var name in view.resources) {
-    var resource = view.resources[name];
-    if (typeof resource === 'string' && resource[0] === '/') {
-      resource = this.resource(resource);
-    } else if (typeof resource === 'object' && typeof resource.url === 'string' && resource.url[0] === '/') {
-      resource.url = this.resourceUrl(resource.url);
-    }
-    view.resources[name] = resource;
-  }
-  return SolidusClient.prototype.view.call(this, view);
 };
 
 module.exports = Universe;

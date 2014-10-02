@@ -1,10 +1,25 @@
 {
   "name": "universejs",
   "version": "0.0.0",
-  "description": "",
   "main": "index.js",
-  "author": "",
+  "author": {
+    "name": "Joannic Laborde",
+    "email": "joannic@sparkart.com",
+    "url": "http://www.sparkart.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SparkartGroupInc/universe.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SparkartGroupInc/universe.js.git"
+  },
   "dependencies": {
     "solidus-client": "git+https://github.com/solidusjs/solidus-client.git#solidus-client"
+  },
+  "devDependencies": {
+    "handlebars": "~2.0.0",
+    "nock": "~0.48.0"
   }
 }
