@@ -70,7 +70,8 @@ var getFanclub = function(callback) {
     callback(this.context.resources.fanclub.fanclub);
   } else {
     this.getResource(this.resource('/fanclub'), null, function(err, data) {
-      callback(data.fanclub);
+      // TODO: what to do with errors?
+      callback(data ? data.fanclub : null);
     });
   }
 };
@@ -78,9 +79,11 @@ var getFanclub = function(callback) {
 var getCustomer = function(callback) {
   var self = this;
   self.getResource(self.jsonpResource('/account/status'), null, function(err, data) {
-    if (data.logged_in) {
+    // TODO: what to do with errors?
+    if (data && data.logged_in) {
       self.getResource(self.resource('/account'), null, function(err, data) {
-        callback(data.customer);
+        // TODO: what to do with errors?
+        callback(data ? data.customer : null);
       });
     } else {
       callback();
