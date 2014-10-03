@@ -33,17 +33,9 @@ Universe.prototype.ready = function(callback) {
   });
 };
 
-Universe.prototype.view = function(view) {
-  for (var name in view.resources) {
-    var resource = view.resources[name];
-    if (typeof resource === 'string' && resource[0] === '/') {
-      resource = this.resource(resource);
-    } else if (resource !== null && typeof resource === 'object' && typeof resource.url === 'string' && resource.url[0] === '/') {
-      resource.url = resourceUrl.call(this, resource.url);
-    }
-    view.resources[name] = resource;
-  }
-  return SolidusClient.prototype.view.call(this, view);
+Universe.prototype.render = function() {
+  expandResourcesEndpoints.call(this, arguments[0]);
+  return SolidusClient.prototype.render.apply(this, arguments);
 };
 
 Universe.prototype.resource = function(endpoint) {
@@ -89,6 +81,20 @@ var getCustomer = function(callback) {
       callback();
     }
   });
+};
+
+var expandResourcesEndpoints = function(view) {
+  if (!view || typeof view !== 'object') return;
+
+  for (var name in view.resources) {
+    var resource = view.resources[name];
+    if (typeof resource === 'string' && resource[0] === '/') {
+      resource = this.resource(resource);
+    } else if (resource !== null && typeof resource === 'object' && typeof resource.url === 'string' && resource.url[0] === '/') {
+      resource.url = resourceUrl.call(this, resource.url);
+    }
+    view.resources[name] = resource;
+  }
 };
 
 var resourceUrl = function(endpoint) {

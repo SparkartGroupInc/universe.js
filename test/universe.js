@@ -2,6 +2,7 @@ var assert = require('assert');
 var Handlebars = require('handlebars');
 var nock = require('nock');
 
+var SolidusClient = require('solidus-client');
 var Universe = require('../index');
 
 describe('Universe', function() {
@@ -99,9 +100,32 @@ describe('Universe', function() {
     });
   });
 
-  describe('.view', function() {
+  describe('.render', function() {
+    var render = SolidusClient.prototype.render;
+
+    afterEach(function() {
+      SolidusClient.prototype.render = render;
+    });
+
     it('expands the Universe resources URLs', function(done) {
-      var view = {
+      SolidusClient.prototype.render = function(view) {
+        assert.deepEqual(view.resources, {
+          plans1:  universe.resource('/plans'),
+          plans2:  'http://solidus.com',
+          plans3:  12345,
+          plans4:  null,
+          plans5:  undefined,
+          plans6:  {url: 'https://services.sparkart.net/api/v1/plans'},
+          plans7:  {url: 'http://solidus.com'},
+          plans8:  {url: 12345},
+          plans9:  {url: null},
+          plans10: {url: undefined}
+        });
+        done();
+      };
+
+      var universe = new Universe({key: '12345'});
+      universe.render({
         resources: {
           plans1:  '/plans',
           plans2:  'http://solidus.com',
@@ -114,37 +138,17 @@ describe('Universe', function() {
           plans9:  {url: null},
           plans10: {url: undefined},
         }
-      };
-      var universe = new Universe({key: '12345'});
-      view = universe.view(view);
-      assert.deepEqual(view.resources, {
-        plans1:  universe.resource('/plans'),
-        plans2:  'http://solidus.com',
-        plans3:  12345,
-        plans4:  null,
-        plans5:  undefined,
-        plans6:  {url: 'https://services.sparkart.net/api/v1/plans'},
-        plans7:  {url: 'http://solidus.com'},
-        plans8:  {url: 12345},
-        plans9:  {url: null},
-        plans10: {url: undefined}
       });
-      done();
     });
 
-    it('adds a .render method to the view', function(done) {
-      nock('https://services.sparkart.net').get('/api/v1/plans?key=12345').reply(200, '{"plans": "success!"}');
-
-      var view = {
-        resources: {plans: '/plans'},
-        template: Handlebars.compile('test {{resources.plans.plans}}')
-      };
-      var universe = new Universe({key: '12345'});
-      view = universe.view(view);
-      view.render(function(html) {
-        assert.equal(html, 'test success!');
+    it('with no resources', function(done) {
+      SolidusClient.prototype.render = function(view) {
+        assert(!view.resources);
         done();
-      });
+      };
+
+      var universe = new Universe({key: '12345'});
+      universe.render({});
     });
   });
 
