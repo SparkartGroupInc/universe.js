@@ -1,9 +1,10 @@
-var SolidusClient = require('solidus-client');
-
 var API_URLS = {
   staging:    'https://staging.services.sparkart.net/api/v1',
   production: 'https://services.sparkart.net/api/v1'
 };
+
+var SolidusClient = require('solidus-client');
+var Resource = require('solidus-client/lib/resource');
 
 var Universe = function(options) {
   if (!(this instanceof Universe)) return new Universe(options);
@@ -36,6 +37,13 @@ Universe.prototype.ready = function(callback) {
 Universe.prototype.render = function() {
   expandResourcesEndpoints.call(this, arguments[0]);
   return SolidusClient.prototype.render.apply(this, arguments);
+};
+
+Universe.prototype.post = function(endpoint, data, callback) {
+  var resource = new Resource(this.resource(endpoint));
+  resource.post(data, function(err, response) {
+    callback(err, response ? response.data : null);
+  });
 };
 
 Universe.prototype.resource = function(endpoint) {

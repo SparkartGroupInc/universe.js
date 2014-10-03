@@ -152,6 +152,21 @@ describe('Universe', function() {
     });
   });
 
+  describe('.post', function() {
+    it('sends data to the endpoint', function(done) {
+      var body   = {id: 1, email: 'test@sparkart.com'};
+      var result = {status: 'ok', customer: body};
+      nock('https://services.sparkart.net').post('/api/v1/account?key=12345', body).reply(200, JSON.stringify(result));
+
+      var universe = new Universe({key: '12345'});
+      universe.post('/account', body, function(err, data) {
+        assert.ifError(err);
+        assert.deepEqual(data, result);
+        done();
+      });
+    });
+  });
+
   describe('.resource', function() {
     it('returns a resource from a Universe endpoint', function(done) {
       var universe = new Universe({key: '12345'});
