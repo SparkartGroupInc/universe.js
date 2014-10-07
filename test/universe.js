@@ -2,6 +2,7 @@ var assert = require('assert');
 var Handlebars = require('handlebars');
 var nock = require('nock');
 
+var Resource = require('solidus-client/lib/resource');
 var SolidusClient = require('solidus-client');
 var Universe = require('../index');
 
@@ -153,6 +154,14 @@ describe('Universe', function() {
   });
 
   describe('.post', function() {
+    var requestType = Resource.prototype.requestType;
+    var post = Resource.prototype.post;
+
+    afterEach(function() {
+      Resource.prototype.requestType = requestType;
+      Resource.prototype.post = post;
+    });
+
     it('sends data to the endpoint', function(done) {
       var body   = {id: 1, email: 'test@sparkart.com'};
       var result = {status: 'ok', customer: body};
@@ -164,6 +173,19 @@ describe('Universe', function() {
         assert.deepEqual(data, result);
         done();
       });
+    });
+
+    it('with jsonp adds _method=POST to the query', function(done) {
+      Resource.prototype.requestType = function() {
+        return 'jsonp';
+      };
+      Resource.prototype.post = function(data, callback) {
+        assert.equal(this.options.query._method, 'POST');
+        done();
+      };
+
+      var universe = new Universe({key: '12345'});
+      universe.post('/account');
     });
   });
 

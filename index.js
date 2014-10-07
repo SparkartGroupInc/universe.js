@@ -41,6 +41,11 @@ Universe.prototype.render = function() {
 
 Universe.prototype.post = function(endpoint, data, callback) {
   var resource = new Resource(this.resource(endpoint));
+  if (resource.requestType() == 'jsonp') {
+    resource.options.query || (resource.options.query = {});
+    resource.options.query._method = 'POST';
+  }
+
   resource.post(data, function(err, response) {
     callback(err, response ? response.data : null);
   });
