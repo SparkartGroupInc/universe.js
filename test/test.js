@@ -118,13 +118,24 @@ describe('Universe', function() {
     });
   });
 
+  describe('.get', function() {
+    it('expands the endpoint', function(done) {
+      var universe = new Universe({environment: 'test_in', key: '12345'});
+      universe.get('/{a}', {a: 'account'}, function(err, data) {
+        assert.ifError(err);
+        assert.deepEqual(data, {customer: 'me!'});
+        done();
+      });
+    });
+  });
+
   describe('.post', function() {
     it('with jsonp adds _method=POST to the query', function(done) {
       var body   = {id: 1, email: 'test@sparkart.com'};
       var result = {status: 'ok', customer: body};
 
       var universe = new Universe({environment: 'test_in', key: '12345'});
-      universe.post('/account', body, function(err, data) {
+      universe.post('/{a}', {a: 'account'}, body, function(err, data) {
         assert.ifError(err);
         assert.deepEqual(data, result);
         done();

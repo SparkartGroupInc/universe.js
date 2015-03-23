@@ -41,8 +41,12 @@ Universe.prototype.render = function() {
   return SolidusClient.prototype.render.apply(this, arguments);
 };
 
-Universe.prototype.post = function(endpoint, data, callback) {
-  var resource = new Resource(this.resource(endpoint));
+Universe.prototype.get = function(endpoint, params, callback) {
+  this.getResource(this.resource(endpoint), params, callback);
+};
+
+Universe.prototype.post = function(endpoint, params, data, callback) {
+  var resource = new Resource(this.resource(endpoint), null, params);
   if (resource.requestType() == 'jsonp') {
     resource.options.query || (resource.options.query = {});
     resource.options.query._method = 'POST';
