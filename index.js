@@ -1,97 +1,126 @@
-var NO_OP = function(){};
-
-var Customer = require('./src/customer.js');
-var Account = require('./src/account.js');
-var Event = require('./src/event.js');
-var Events = require('./src/events.js');
-var Plans = require('./src/plans.js');
-var apiRequest = require('./src/api_request.js');
-
-var Universe = function( config ){
-	if( !config.key ){
-		throw new Error('key must be specified when instantiating a Universe');
-	}
-	this.key = config.key;
-	this.logged_in = null;
-	this.customer = null;
-	this.fanclub = null;
-	this.account_request_complete = false;
-	this.fanclub_request_complete = false;
-	this.queued_widgets = [];
-
-	var fanclub = this;
-
-	// attempt to run fanclub.initialize
-	var attemptInit = function(){
-		if( fanclub.account_request_complete && fanclub.fanclub_request_complete ){
-			fanclub.initialize();
-		}
-	};
-
-	// Check login status, so we can short-circuit other API requests if logged out
-	apiRequest( 'account/status', this.key, { jsonp: true }, function( err, response ){
-		this.logged_in = response.logged_in;
-		// Request full account object from API if user is logged in
-		if( this.logged_in ){
-			apiRequest( 'account', this.key, function( err, response ){
-				fanclub.customer = response ? response.customer : null;
-				fanclub.account_request_complete = true;
-				attemptInit();
-			});
-		// Skip account request if user is not logged in
-		} else {			
-			fanclub.account_request_complete = true;
-			attemptInit();
-		}
-	});
-
-	// Fetch initial Fanclub data from API
-	apiRequest( 'fanclub', this.key, function( err, response ){
-		fanclub.fanclub = response ? response.fanclub : null;
-		fanclub.fanclub_request_complete = true;
-		attemptInit();
-	});
+var API_URLS = {
+  test_in:    'http://localhost:8081/i/api/v1', // With a logged in user
+  test_out:   'http://localhost:8081/o/api/v1', // With no logged in user
+  staging:    'https://staging.services.sparkart.net/api/v1',
+  production: 'https://services.sparkart.net/api/v1'
 };
 
-Universe.prototype.initialize = function(){
-	console.log('initialize fanclub!', this);
-	this.queuedWidgets();
+var SolidusClient = require('solidus-client');
+var Resource = require('solidus-client/lib/resource');
+
+var Universe = function(options) {
+  if (!(this instanceof Universe)) return new Universe(options);
+
+  SolidusClient.call(this, options);
+
+  options || (options = {});
+  this.environment = options.environment || 'production';
+  this.key         = options.key;
 };
 
-// initialize a widget
-Universe.prototype.widget = function( name, options ){
-	// if the account or fanclub requests are still pending, queue this for later
-	if( !( this.account_request_complete && this.fanclub_request_complete ) ){
-		this.queued_widgets.push( [name,options] );
-		return;
-	}
-	options.key = this.key;
-	options.fanclub = this.fanclub;
-	switch( name ){
-	case 'customer':
-		new Customer( options );
-	break;
-	case 'account':
-		new Account( options );
-	break;
-	case 'event':
-		new Event( options );
-	break;
-	case 'events':
-		new Events( options );
-	break;
-	case 'plans':
-		new Plans( options );
-	break;
-	}
+Universe.prototype = Object.create(SolidusClient.prototype);
+
+Universe.prototype.init = function(callback) {
+  var self = this;
+  var data = {};
+
+  getFanclub.call(self, function(err, fanclub) {
+    data.fanclub = fanclub;
+    if (err) {
+      if (callback) callback(err, data);
+      return setTimeout(function() {self.emit('error', err)}, 0);
+    }
+
+    getCustomer.call(self, function(err, customer) {
+      data.customer = customer;
+      if (callback) callback(err, data);
+      if (!err) setTimeout(function() {self.emit('ready', data)}, 0);
+    });
+  });
 };
 
-// loop through queued widget initializaitons and initialize them all
-Universe.prototype.queuedWidgets = function(){
-	for( var i = this.queued_widgets.length - 1; i >= 0; i-- ){
-		this.widget.apply( this, this.queued_widgets[i] );
-	}
-	this.queued_widgets = [];
+Universe.prototype.render = function() {
+  expandResourcesEndpoints.call(this, arguments[0]);
+  return SolidusClient.prototype.render.apply(this, arguments);
+};
+
+Universe.prototype.get = function(endpoint, callback) {
+  this.getResource(this.resource(endpoint), null, callback);
+};
+
+Universe.prototype.post = function(endpoint, data, callback) {
+  var resource = new Resource(this.resource(endpoint));
+  if (resource.requestType() == 'jsonp') {
+    resource.options.query || (resource.options.query = {});
+    resource.options.query._method = 'POST';
+  }
+
+  resource.post(data, function(err, response) {
+    callback(err, response ? response.data : null);
+  });
+};
+
+Universe.prototype.resource = function(endpoint) {
+  return {
+    url: resourceUrl.call(this, endpoint),
+    query: {
+      key: this.key
+    },
+    with_credentials: true
+  };
+};
+
+Universe.prototype.jsonpResource = function(endpoint) {
+  return {
+    url: resourceUrl.call(this, endpoint),
+    jsonp: true
+  };
+};
+
+// PRIVATE
+
+var getFanclub = function(callback) {
+  if (this.context && this.context.resources && this.context.resources.fanclub) {
+    callback(null, this.context.resources.fanclub.fanclub);
+  } else {
+    this.getResource(this.resource('/fanclub'), null, function(err, data) {
+      callback(err, data ? data.fanclub : null);
+    });
+  }
+};
+
+var getCustomer = function(callback) {
+  var self = this;
+
+  self.getResource(self.jsonpResource('/account/status'), null, function(err, data) {
+    if (err) return callback(err);
+
+    if (data.logged_in) {
+      self.getResource(self.resource('/account'), null, function(err, data) {
+        callback(err, data ? data.customer : null);
+      });
+    } else {
+      callback();
+    }
+  });
+};
+
+var expandResourcesEndpoints = function(view) {
+  if (!view || typeof view !== 'object') return;
+
+  for (var name in view.resources) {
+    var resource = view.resources[name];
+    if (typeof resource === 'string' && resource[0] === '/') {
+      resource = this.resource(resource);
+    } else if (resource !== null && typeof resource === 'object' && typeof resource.url === 'string' && resource.url[0] === '/') {
+      resource.url = resourceUrl.call(this, resource.url);
+    }
+    view.resources[name] = resource;
+  }
+};
+
+var resourceUrl = function(endpoint) {
+  return (API_URLS[this.environment] || API_URLS['production']) + endpoint;
 };
 
 module.exports = Universe;
