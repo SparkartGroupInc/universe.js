@@ -1,5 +1,5 @@
 {
-  "name": "universejs",
+  "name": "universe-js",
   "version": "1.0.0",
   "main": "index.js",
   "author": {
@@ -9,11 +9,11 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/SparkartGroupInc/universe.js/issues"
+    "url": "https://github.com/SparkartGroupInc/universe-js/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SparkartGroupInc/universe.js.git"
+    "url": "https://github.com/SparkartGroupInc/universe-js.git"
   },
   "scripts": {
     "build": "./node_modules/.bin/gulp build",

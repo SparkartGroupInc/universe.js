@@ -7,7 +7,7 @@ Interacting with Sparkart's [Universe API](http://docs.services.sparkart.net), u
 ## Construction
 
 ```javascript
-var Universe = require('universejs');
+var Universe = require('universe-js');
 var universe = new Universe({key: '12345'});
 universe.context = {...};
 ```

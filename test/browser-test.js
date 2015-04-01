@@ -10,7 +10,7 @@ var browserStackConfig = {
   'browserstack.local': 'true',
   'browserstack.user':  'TODO',
   'browserstack.key':   'TODO',
-  'project':            'universejs'
+  'project':            'universe-js'
 }
 
 var setups = [
