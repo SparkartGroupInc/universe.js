@@ -1,6 +1,6 @@
 {
   "name": "universe-js",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "author": {
     "name": "Joannic Laborde",
@@ -23,7 +23,7 @@
     "test-server": "./node_modules/.bin/gulp test-server"
   },
   "dependencies": {
-    "solidus-client": "^1.0.0"
+    "solidus-client": "^1.1.0"
   },
   "devDependencies": {
     "handlebars": "~2.0.0",
