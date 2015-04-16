@@ -23,7 +23,7 @@
     "test-server": "./node_modules/.bin/gulp test-server"
   },
   "dependencies": {
-    "solidus-client": "^1.1.1"
+    "solidus-client": "^1.2.1"
   },
   "devDependencies": {
     "handlebars": "~2.0.0",
