@@ -1,3 +1,7 @@
+## 1.1.2 (Apr 15, 2015)
+
+ - Fix JSONP requests for non-ready body element [[f1be6aa](https://github.com/SparkartGroupInc/universe-js/commit/f1be6aa87249b6bda52fad36f1f6d6d2773330c1)]
+
 ## 1.1.1 (Apr 9, 2015)
 
  - Validate format of redirect array returned by preprocessors [[c48e245](https://github.com/SparkartGroupInc/universe-js/commit/c48e245075f4a2adad892e729d7ee1d5dc0d471c)]

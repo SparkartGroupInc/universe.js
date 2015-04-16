@@ -1361,9 +1361,20 @@ var Resource = function(options, resources_options, params) {
 Resource.prototype.requestType = function() {
   if (!util.isNode) {
     if (this.options.proxy) return 'proxy';
-    if (this.options.jsonp || (this.options.with_credentials && util.isIE)) return 'jsonp';
+    if (this.options.jsonp || (this.options.with_credentials && !util.supportsCORS)) return 'jsonp';
   }
   return 'client';
+};
+
+// String that can be used as a cache key, represents everything that is unique about the request
+Resource.prototype.key = function() {
+  var parts = [requestUrl.call(this)];
+  if (this.requestType() === 'client') {
+    if (this.options.headers) parts.push(JSON.stringify(this.options.headers));
+    if (this.options.auth) parts.push(JSON.stringify(_.pick(this.options.auth, 'user', 'pass')));
+    if (this.options.with_credentials && !util.isNode) parts.push(JSON.stringify({with_credentials: true}));
+  }
+  return parts.join('|');
 };
 
 Resource.prototype.get = function(callback) {
@@ -1405,7 +1416,7 @@ var initializeOptions = function(options, resources_options, params) {
     if (!_.isString(value)) return;
     var expanded = expandVariables(value, params);
     self.options.query[name] = expanded[0];
-    if (expanded[1]) self.dynamic = expanded[1];
+    if (expanded[1]) self.dynamic = true;
   });
 };
 
@@ -1447,16 +1458,33 @@ var request = function(method, data, callback) {
   });
 };
 
+var requestUrl = function() {
+  if (!this.url) return;
+
+  switch (this.requestType()) {
+  case 'proxy':
+    return proxyRequestUrl.call(this);
+  case 'jsonp':
+    return jsonpRequestUrl.call(this);
+  case 'client':
+    return clientRequestUrl.call(this);
+  }
+};
+
 var proxyRequest = function(method, data, callback) {
   if (method != 'get') return callback('Invalid proxy method: ' + method);
 
-  var route   = (this.options.solidus_api_route || DEFAULT_SOLIDUS_API_ROUTE) + 'resource.json';
-  var url     = buildUrl.call(this, route, {url: this.url});
-  var request = superagent.get(url);
+  var request = superagent.get(proxyRequestUrl.call(this));
 
   if (this.options.timeout) request.timeout(this.options.timeout);
 
   superAgentRequest(request, callback);
+};
+
+var proxyRequestUrl = function() {
+  var route = (this.options.solidus_api_route || DEFAULT_SOLIDUS_API_ROUTE) + 'resource.json';
+  var url   = buildUrl.call(this, this.url);
+  return route + '?url=' + encodeURIComponent(url);
 };
 
 var jsonpRequest = function(method, data, callback) {
@@ -1464,7 +1492,7 @@ var jsonpRequest = function(method, data, callback) {
 
   var self = this;
   var callbackName = 'solidus_client_jsonp_callback_' + Math.round(100000 * Math.random());
-  var url = buildUrl.call(self, self.url, {callback: callbackName}, _.isObject(data) ? data : {});
+  var url = buildUrl.call(self, jsonpRequestUrl.call(self), {callback: callbackName}, _.isObject(data) ? data : {});
   if (_.isString(data)) url += '&' + data;
 
   var script = document.createElement('script');
@@ -1472,7 +1500,7 @@ var jsonpRequest = function(method, data, callback) {
 
   var timer;
   var jsonpCallback = _.once(function(data) {
-    document.body.removeChild(script);
+    document.getElementsByTagName('head')[0].removeChild(script);
     if (data instanceof Error) return callback(data);
     if (timer) clearTimeout(timer);
     processResponse({status: 200}, data, callback);
@@ -1486,13 +1514,17 @@ var jsonpRequest = function(method, data, callback) {
     }, self.options.timeout);
   }
 
-  document.body.appendChild(script);
+  document.getElementsByTagName('head')[0].appendChild(script);
+};
+
+var jsonpRequestUrl = function(data) {
+  return buildUrl.call(this, this.url);
 };
 
 var clientRequest = function(method, data, callback) {
   if (method != 'get' & method != 'post') return callback('Invalid method: ' + method);
 
-  var url     = buildUrl.call(this, this.url);
+  var url     = clientRequestUrl.call(this);
   var request = method == 'get' ? superagent.get(url) : superagent.post(url).send(data);
 
   if (this.options.headers) request.set(this.options.headers);
@@ -1501,6 +1533,10 @@ var clientRequest = function(method, data, callback) {
   if (this.options.timeout) request.timeout(this.options.timeout);
 
   superAgentRequest(request, callback);
+};
+
+var clientRequestUrl = function() {
+  return buildUrl.call(this, this.url);
 };
 
 var buildUrl = function(url) {
@@ -1575,7 +1611,7 @@ module.exports = Resource;
 },{"./base64":8,"./util":10,"extend":12,"qs":111,"superagent":116,"underscore":119}],10:[function(_dereq_,module,exports){
 module.exports.isNode = !(typeof window !== 'undefined' && window !== null);
 
-module.exports.isIE = typeof XDomainRequest !== 'undefined';
+module.exports.supportsCORS = !module.exports.isNode && (('withCredentials' in new XMLHttpRequest()) || (typeof XDomainRequest !== 'undefined'));
 
 },{}],11:[function(_dereq_,module,exports){
 var _ = _dereq_('underscore');
