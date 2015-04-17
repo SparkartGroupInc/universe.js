@@ -1,3 +1,7 @@
+## 1.1.3 (Apr 16, 2015)
+
+ - Fix CORS and JSONP on older browsers [[e32b2e0](https://github.com/SparkartGroupInc/universe-js/commit/e32b2e03be31dfebd35f2908dae652b60d92bb90)]
+
 ## 1.1.2 (Apr 15, 2015)
 
  - Fix JSONP requests for non-ready body element [[f1be6aa](https://github.com/SparkartGroupInc/universe-js/commit/f1be6aa87249b6bda52fad36f1f6d6d2773330c1)]
