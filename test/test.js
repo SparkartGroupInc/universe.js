@@ -93,6 +93,16 @@ describe('Universe', function() {
         done();
       });
     });
+
+    it('with real connection', function(done) {
+      this.timeout(5000);
+      var universe = new Universe({environment: 'staging', key: '85fb2147-06bb-4923-9589-34b186a3899c'});
+      universe.init(function(err, data) {
+        assert.ifError(err);
+        assert.equal(data.fanclub.name, 'Universe Demo');
+        done();
+      });
+    });
   });
 
   describe('.render', function() {

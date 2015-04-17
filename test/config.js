@@ -1,4 +1,5 @@
 var fs = require('fs');
+var url  = require('url');
 
 module.exports.port = 8081;
 module.exports.host = 'http://localhost:' + module.exports.port;
@@ -18,12 +19,14 @@ module.exports.routes = function (req, res) {
 
   var success = function(data) {
     res.writeHead(200, {'Content-Type': 'application/json'});
-    if (req.url.indexOf('solidus_client_jsonp_callback_100000') == -1) {
-      res.end(JSON.stringify(data));
+    var callback = url.parse(req.url, true).query.callback;
+    if (callback) {
+      res.end(callback + '(' + JSON.stringify(data) + ');');
     } else {
-      res.end('solidus_client_jsonp_callback_100000(' + JSON.stringify(data) + ');');
+      res.end(JSON.stringify(data));
     }
   };
+
   var not_found = function() {
     res.writeHead(404, {'Content-Type': 'application/json'});
     res.end(JSON.stringify({error: 'Not Found: ' + req.url}));
@@ -31,24 +34,24 @@ module.exports.routes = function (req, res) {
 
   var logged_in = req.url.indexOf('/i/') == 0;
 
-  switch (req.method + ' ' + req.url.substring(2)) {
+  switch ((req.method + ' ' + req.url.substring(2)).replace(/solidus_client_jsonp_callback_\d+/, 'solidus_client_jsonp_callback')) {
   case 'GET /api/v1/fanclub?key=12345':
-  case 'GET /api/v1/fanclub?key=12345&callback=solidus_client_jsonp_callback_100000':
+  case 'GET /api/v1/fanclub?key=12345&callback=solidus_client_jsonp_callback':
     success({fanclub: 'demo!'});
     break;
 
   case 'GET /api/v1/fanclub?key=wrong':
-  case 'GET /api/v1/fanclub?key=wrong&callback=solidus_client_jsonp_callback_100000':
+  case 'GET /api/v1/fanclub?key=wrong&callback=solidus_client_jsonp_callback':
     success({status: 'error', message: 'Not Found'});
     break;
 
   case 'GET /api/v1/account/status':
-  case 'GET /api/v1/account/status?callback=solidus_client_jsonp_callback_100000':
+  case 'GET /api/v1/account/status?callback=solidus_client_jsonp_callback':
     success({logged_in: logged_in});
     break;
 
   case 'GET /api/v1/account?key=12345':
-  case 'GET /api/v1/account?key=12345&callback=solidus_client_jsonp_callback_100000':
+  case 'GET /api/v1/account?key=12345&callback=solidus_client_jsonp_callback':
     success(logged_in ? {customer: 'me!'} : {});
     break;
 
@@ -61,7 +64,7 @@ module.exports.routes = function (req, res) {
     });
     break;
 
-  case 'GET /api/v1/account?key=12345&_method=POST&callback=solidus_client_jsonp_callback_100000&id=1&email=test%40sparkart.com':
+  case 'GET /api/v1/account?key=12345&_method=POST&callback=solidus_client_jsonp_callback&id=1&email=test%40sparkart.com':
     success({status: 'ok', customer: {id: 1, email: 'test@sparkart.com'}});
     break;
 
