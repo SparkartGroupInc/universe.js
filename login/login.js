@@ -8,9 +8,15 @@ var isMobile = navigator.userAgent.match(/Mobile/i);
  * Override login links, including those added dynamically
  * @param {object} fanclub - universe /api/v1/fanclub data
  * @param {object} scope - DOM node to scope links to
+ * @param {function} processor - Login options (for the query string) processor
  */
 
-function linkify (fanclub, scope) {
+function linkify (fanclub, scope, processor) {
+  if (!processor && typeof(scope) === 'function') {
+    processor = scope;
+    scope = undefined;
+  }
+
   var delegate = new Delegate(scope || document.body);
 
   delegate.on('click', 'a', function (event) {
@@ -18,7 +24,7 @@ function linkify (fanclub, scope) {
 
     if (url.match('login')) {
       event.preventDefault();
-      prompt(fanclub, url);
+      prompt(fanclub, url, processor);
     }
   });
 }
@@ -30,14 +36,19 @@ function linkify (fanclub, scope) {
  * @param {string|object} [options] - login URL or configuration object
  * @param {string} options.url - login URL
  * @param {string} options.* - Universe configuration parameters to passthrough
+ * @param {function} processor - Login options (for the query string) processor
  */
 
-function prompt (fanclub, options) {
+function prompt (fanclub, options, processor) {
+  if (!processor && typeof(options) === 'function') {
+    processor = options;
+    options = undefined;
+  }
 
   if (isMobile) {
-    window.location = config(fanclub, options).url;
+    window.location = config(fanclub, options, false, processor).url;
   } else {
-    var login = config(fanclub, options, true);
+    var login = config(fanclub, options, true, processor);
 
     // Set desired final destination in a cookie to preserve through intermediary redirects
     document.cookie = cookie.serialize('redirect', login.redirect, {
@@ -53,9 +64,10 @@ function prompt (fanclub, options) {
  * Creates config object, sets login URL from Universe instance if not defined
  * @private
  * @param {string|object} options - login URL or configuration object
+ * @param {function} processor - Login options (for the query string) processor
  */
 
-function config (fanclub, options, popup) {
+function config (fanclub, options, popup, processor) {
 
   var options = (typeof options === 'string' && options.match(/\?/))
     ? qs.parse(options.split('?').pop())
@@ -72,6 +84,8 @@ function config (fanclub, options, popup) {
   }
 
   if (popup) options.popup = 1;
+
+  if (processor) options = processor(options);
 
   return {
     url: loginUrl + '?' + qs.stringify(options),
