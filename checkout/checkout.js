@@ -9,9 +9,10 @@ function linkify(scope) {
 }
 
 function saveGADataToCookie() {
-  if (window.location.href.indexOf('?') === -1) return;
+  var url = module.exports.getUrl();
+  if (url.indexOf('?') === -1) return;
 
-  var query = qs.parse(window.location.href.split('?').pop().split('#')[0]);
+  var query = qs.parse(url.split('?').pop().split('#')[0]);
   query = _.pick(query, function(v, k) {return v && k.indexOf('utm_') === 0});
   query = qs.stringify(query);
 
@@ -25,14 +26,17 @@ function addGADataToLinks(scope) {
   var delegate = new Delegate(scope || document.body);
 
   delegate.on('click', 'a', function (event) {
-    var url = event.target.getAttribute('href');
-    if (!url.match('checkout')) return;
-
     event.preventDefault();
-    window.location.href = url + (url.indexOf('?') === -1 ? '?' : '&') + query;
+    var url = event.target.getAttribute('href');
+    if (url.match('checkout')) url += (url.indexOf('?') === -1 ? '?' : '&') + query;
+    module.exports.setUrl(url);
   });
 };
 
 module.exports = {
-  linkify: linkify
+  linkify: linkify,
+
+  // Exposed for testing
+  getUrl: function() {return window.location.href},
+  setUrl: function(url) {window.location.href = url}
 };
