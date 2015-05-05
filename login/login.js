@@ -69,18 +69,15 @@ function prompt (fanclub, options, processor) {
 
 function config (fanclub, options, popup, processor) {
 
-  var options = (typeof options === 'string' && options.match(/\?/))
-    ? qs.parse(options.split('?').pop())
-    : {};
+  if (typeof options === 'string' && options.match(/\?/)) options = qs.parse(options.split('?').pop());
 
   var loginUrl = fanclub.links.login;
 
   if (!options.redirect || !options.redirect.match(/^https?:\/\//)) {
-    var redirect = (!options.redirect || options.redirect[0] === '/')
-      ? ''
-      : '/' + options.redirect;
+    var redirect = options.redirect || '';
+    if (redirect.substr(0,1) === '/') redirect = redirect.slice(1);
 
-    options.redirect = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + redirect;
+    options.redirect = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + '/' + redirect;
   }
 
   if (popup) options.popup = 1;
