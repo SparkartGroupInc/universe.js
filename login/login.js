@@ -69,7 +69,8 @@ function prompt (fanclub, options, processor) {
 
 function config (fanclub, options, popup, processor) {
 
-  if (typeof options === 'string' && options.match(/\?/)) options = qs.parse(options.split('?').pop());
+  if (typeof options === 'string' && !options.match(/\?/)) options = {};
+  if (typeof options === 'string') options = qs.parse(options.split('?').pop());
 
   var loginUrl = fanclub.links.login;
 
@@ -81,7 +82,6 @@ function config (fanclub, options, popup, processor) {
   }
 
   if (popup) options.popup = 1;
-
   if (processor) options = processor(options);
 
   return {
