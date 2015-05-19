@@ -1,8 +1,8 @@
 var cookie = require('cookie');
 var Delegate = require('dom-delegate');
-var qs = require('querystring');
+var qs = require('query-string');
 
-var isMobile = navigator.userAgent.match(/Mobile/i);
+var util = require('../lib/util');
 
 /**
  * Override login links, including those added dynamically
@@ -20,11 +20,13 @@ function linkify (fanclub, scope, processor) {
   var delegate = new Delegate(scope || document.body);
 
   delegate.on('click', 'a', function (event) {
+    event.preventDefault();
     var url = event.target.getAttribute('href');
 
     if (url.match('login')) {
-      event.preventDefault();
-      prompt(fanclub, url, processor);
+      module.exports.prompt(fanclub, url, processor);
+    } else {
+      module.exports.setUrl(url);
     }
   });
 }
@@ -45,15 +47,13 @@ function prompt (fanclub, options, processor) {
     options = undefined;
   }
 
-  if (isMobile) {
-    window.location = config(fanclub, options, false, processor).url;
+  if (util.isMobile) {
+    module.exports.setUrl(config(fanclub, options, false, processor).url);
   } else {
     var login = config(fanclub, options, true, processor);
 
     // Set desired final destination in a cookie to preserve through intermediary redirects
-    document.cookie = cookie.serialize('redirect', login.redirect, {
-      path: '/login/reload'
-    });
+    module.exports.setCookie(login.redirect);
 
     popup(login.url);
   }
@@ -75,10 +75,10 @@ function config (fanclub, options, popup, processor) {
   var loginUrl = fanclub.links.login;
 
   if (!options.redirect || !options.redirect.match(/^https?:\/\//)) {
-    var redirect = options.redirect || '';
-    if (redirect.substr(0,1) === '/') redirect = redirect.slice(1);
+    var redirect = options.redirect || '/';
+    if (redirect.substr(0,1) !== '/') redirect = location.pathname.replace(/[^\/]*$/, redirect);
 
-    options.redirect = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + '/' + redirect;
+    options.redirect = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + redirect;
   }
 
   if (popup) options.popup = 1;
@@ -116,10 +116,15 @@ function popup (url) {
   options.top = screenTop + ((window.innerHeight - options.height) / 2);
   options.left = screenLeft + ((window.innerWidth - options.width) / 2);
 
-  window.open(url, 'universeLogin', qs.stringify(options).replace(/&/g, ','));
+  module.exports.openUrl(url, options);
 };
 
 module.exports = {
   linkify: linkify,
-  prompt: prompt
+  prompt: prompt,
+
+  // Exposed for testing
+  setUrl: function(url) {window.location.href = url},
+  setCookie: function(url) {document.cookie = cookie.serialize('redirect', url, {path: '/login/reload'})},
+  openUrl: function(url, options) {window.open(url, 'universeLogin', qs.stringify(options).replace(/&/g, ','))}
 };
