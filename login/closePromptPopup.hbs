@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+
+  <script src="http://browserify.sparkart.net/standalone/cookie@0.1.2"></script>
+  <script>
+
+    // After a successful login in the popup the parent window is redirected by
+    // Universe to /login/reload (hardcoded path). This page is responsible for
+    // closing the popup and navigating to the final destination.
+
+    var redirect = cookie.parse(document.cookie).redirect;
+
+    document.cookie = cookie.serialize('redirect', false, {path: '/login', expires: new Date('Thu, 01 Jan 1970 00:00:00 GMT')});
+
+    if( window.opener && redirect ){
+      window.opener.location.href = redirect;
+      window.close();
+    }
+
+  </script>
+
+</body>
+</html>
