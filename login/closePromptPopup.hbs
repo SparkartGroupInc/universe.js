@@ -11,10 +11,7 @@
 
     var redirect = cookie.parse(document.cookie).redirect;
 
-    document.cookie = cookie.serialize('redirect', false, {
-      path: '/login/reload',
-      expires: new Date('Thu, 01 Jan 1970 00:00:00 GMT')
-    });
+    document.cookie = cookie.serialize('redirect', false, {path: '/login', expires: new Date('Thu, 01 Jan 1970 00:00:00 GMT')});
 
     if( window.opener && redirect ){
       window.opener.location.href = redirect;
