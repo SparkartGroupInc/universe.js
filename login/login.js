@@ -126,5 +126,9 @@ module.exports = {
   // Exposed for testing
   setUrl: function(url) {window.location.href = url},
   setCookie: function(url) {document.cookie = cookie.serialize('redirect', url, {path: '/login/reload'})},
-  openUrl: function(url, options) {window.open(url, 'universeLogin', qs.stringify(options).replace(/&/g, ','))}
+  openUrl: function(url, options) {
+    // HACK: Required so the referrer is set properly in IE
+    var wnd = window.open('', 'universeLogin', qs.stringify(options).replace(/&/g, ','));
+    wnd.location.href = url;
+  }
 };
