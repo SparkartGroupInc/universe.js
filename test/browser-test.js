@@ -23,6 +23,7 @@ var setups = [
   {browser: 'IE', browser_version: '9.0'},
   {browser: 'Firefox'},
   {browser: 'Firefox', browser_version: '30.0'},
+  {device: 'iPhone 6'},
   {device: 'iPhone 5S'},
   {device: 'iPhone 5'},
   {device: 'LG Nexus 4'},
