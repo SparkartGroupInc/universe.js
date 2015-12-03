@@ -126,7 +126,7 @@ var resourceUrl = function(endpoint) {
 
 module.exports = Universe;
 
-},{"solidus-client":7,"solidus-client/lib/resource":9}],2:[function(_dereq_,module,exports){
+},{"solidus-client":12,"solidus-client/lib/resource":14}],2:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1117,6 +1117,418 @@ function hasOwnProperty(obj, prop) {
 
 }).call(this,_dereq_("IrXUsu"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./support/isBuffer":5,"IrXUsu":4,"inherits":3}],7:[function(_dereq_,module,exports){
+module.exports = _dereq_('./lib/');
+
+},{"./lib/":8}],8:[function(_dereq_,module,exports){
+// Load modules
+
+var Stringify = _dereq_('./stringify');
+var Parse = _dereq_('./parse');
+
+
+// Declare internals
+
+var internals = {};
+
+
+module.exports = {
+    stringify: Stringify,
+    parse: Parse
+};
+
+},{"./parse":9,"./stringify":10}],9:[function(_dereq_,module,exports){
+// Load modules
+
+var Utils = _dereq_('./utils');
+
+
+// Declare internals
+
+var internals = {
+    delimiter: '&',
+    depth: 5,
+    arrayLimit: 20,
+    parameterLimit: 1000
+};
+
+
+internals.parseValues = function (str, options) {
+
+    var obj = {};
+    var parts = str.split(options.delimiter, options.parameterLimit === Infinity ? undefined : options.parameterLimit);
+
+    for (var i = 0, il = parts.length; i < il; ++i) {
+        var part = parts[i];
+        var pos = part.indexOf(']=') === -1 ? part.indexOf('=') : part.indexOf(']=') + 1;
+
+        if (pos === -1) {
+            obj[Utils.decode(part)] = '';
+        }
+        else {
+            var key = Utils.decode(part.slice(0, pos));
+            var val = Utils.decode(part.slice(pos + 1));
+
+            if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+                obj[key] = val;
+            }
+            else {
+                obj[key] = [].concat(obj[key]).concat(val);
+            }
+        }
+    }
+
+    return obj;
+};
+
+
+internals.parseObject = function (chain, val, options) {
+
+    if (!chain.length) {
+        return val;
+    }
+
+    var root = chain.shift();
+
+    var obj = {};
+    if (root === '[]') {
+        obj = [];
+        obj = obj.concat(internals.parseObject(chain, val, options));
+    }
+    else {
+        var cleanRoot = root[0] === '[' && root[root.length - 1] === ']' ? root.slice(1, root.length - 1) : root;
+        var index = parseInt(cleanRoot, 10);
+        var indexString = '' + index;
+        if (!isNaN(index) &&
+            root !== cleanRoot &&
+            indexString === cleanRoot &&
+            index >= 0 &&
+            index <= options.arrayLimit) {
+
+            obj = [];
+            obj[index] = internals.parseObject(chain, val, options);
+        }
+        else {
+            obj[cleanRoot] = internals.parseObject(chain, val, options);
+        }
+    }
+
+    return obj;
+};
+
+
+internals.parseKeys = function (key, val, options) {
+
+    if (!key) {
+        return;
+    }
+
+    // The regex chunks
+
+    var parent = /^([^\[\]]*)/;
+    var child = /(\[[^\[\]]*\])/g;
+
+    // Get the parent
+
+    var segment = parent.exec(key);
+
+    // Don't allow them to overwrite object prototype properties
+
+    if (Object.prototype.hasOwnProperty(segment[1])) {
+        return;
+    }
+
+    // Stash the parent if it exists
+
+    var keys = [];
+    if (segment[1]) {
+        keys.push(segment[1]);
+    }
+
+    // Loop through children appending to the array until we hit depth
+
+    var i = 0;
+    while ((segment = child.exec(key)) !== null && i < options.depth) {
+
+        ++i;
+        if (!Object.prototype.hasOwnProperty(segment[1].replace(/\[|\]/g, ''))) {
+            keys.push(segment[1]);
+        }
+    }
+
+    // If there's a remainder, just add whatever is left
+
+    if (segment) {
+        keys.push('[' + key.slice(segment.index) + ']');
+    }
+
+    return internals.parseObject(keys, val, options);
+};
+
+
+module.exports = function (str, options) {
+
+    if (str === '' ||
+        str === null ||
+        typeof str === 'undefined') {
+
+        return {};
+    }
+
+    options = options || {};
+    options.delimiter = typeof options.delimiter === 'string' || Utils.isRegExp(options.delimiter) ? options.delimiter : internals.delimiter;
+    options.depth = typeof options.depth === 'number' ? options.depth : internals.depth;
+    options.arrayLimit = typeof options.arrayLimit === 'number' ? options.arrayLimit : internals.arrayLimit;
+    options.parameterLimit = typeof options.parameterLimit === 'number' ? options.parameterLimit : internals.parameterLimit;
+
+    var tempObj = typeof str === 'string' ? internals.parseValues(str, options) : str;
+    var obj = {};
+
+    // Iterate over the keys and setup the new object
+
+    var keys = Object.keys(tempObj);
+    for (var i = 0, il = keys.length; i < il; ++i) {
+        var key = keys[i];
+        var newObj = internals.parseKeys(key, tempObj[key], options);
+        obj = Utils.merge(obj, newObj);
+    }
+
+    return Utils.compact(obj);
+};
+
+},{"./utils":11}],10:[function(_dereq_,module,exports){
+// Load modules
+
+var Utils = _dereq_('./utils');
+
+
+// Declare internals
+
+var internals = {
+    delimiter: '&',
+    arrayPrefixGenerators: {
+        brackets: function (prefix, key) {
+            return prefix + '[]';
+        },
+        indices: function (prefix, key) {
+            return prefix + '[' + key + ']';
+        },
+        repeat: function (prefix, key) {
+            return prefix;
+        }
+    }
+};
+
+
+internals.stringify = function (obj, prefix, generateArrayPrefix) {
+
+    if (Utils.isBuffer(obj)) {
+        obj = obj.toString();
+    }
+    else if (obj instanceof Date) {
+        obj = obj.toISOString();
+    }
+    else if (obj === null) {
+        obj = '';
+    }
+
+    if (typeof obj === 'string' ||
+        typeof obj === 'number' ||
+        typeof obj === 'boolean') {
+
+        return [encodeURIComponent(prefix) + '=' + encodeURIComponent(obj)];
+    }
+
+    var values = [];
+
+    if (typeof obj === 'undefined') {
+        return values;
+    }
+
+    var objKeys = Object.keys(obj);
+    for (var i = 0, il = objKeys.length; i < il; ++i) {
+        var key = objKeys[i];
+        if (Array.isArray(obj)) {
+            values = values.concat(internals.stringify(obj[key], generateArrayPrefix(prefix, key), generateArrayPrefix));
+        }
+        else {
+            values = values.concat(internals.stringify(obj[key], prefix + '[' + key + ']', generateArrayPrefix));
+        }
+    }
+
+    return values;
+};
+
+
+module.exports = function (obj, options) {
+
+    options = options || {};
+    var delimiter = typeof options.delimiter === 'undefined' ? internals.delimiter : options.delimiter;
+
+    var keys = [];
+
+    if (typeof obj !== 'object' ||
+        obj === null) {
+
+        return '';
+    }
+
+    var arrayFormat;
+    if (options.arrayFormat in internals.arrayPrefixGenerators) {
+        arrayFormat = options.arrayFormat;
+    }
+    else if ('indices' in options) {
+        arrayFormat = options.indices ? 'indices' : 'repeat';
+    }
+    else {
+        arrayFormat = 'indices';
+    }
+
+    var generateArrayPrefix = internals.arrayPrefixGenerators[arrayFormat];
+
+    var objKeys = Object.keys(obj);
+    for (var i = 0, il = objKeys.length; i < il; ++i) {
+        var key = objKeys[i];
+        keys = keys.concat(internals.stringify(obj[key], key, generateArrayPrefix));
+    }
+
+    return keys.join(delimiter);
+};
+
+},{"./utils":11}],11:[function(_dereq_,module,exports){
+// Load modules
+
+
+// Declare internals
+
+var internals = {};
+
+
+exports.arrayToObject = function (source) {
+
+    var obj = {};
+    for (var i = 0, il = source.length; i < il; ++i) {
+        if (typeof source[i] !== 'undefined') {
+
+            obj[i] = source[i];
+        }
+    }
+
+    return obj;
+};
+
+
+exports.merge = function (target, source) {
+
+    if (!source) {
+        return target;
+    }
+
+    if (typeof source !== 'object') {
+        if (Array.isArray(target)) {
+            target.push(source);
+        }
+        else {
+            target[source] = true;
+        }
+
+        return target;
+    }
+
+    if (typeof target !== 'object') {
+        target = [target].concat(source);
+        return target;
+    }
+
+    if (Array.isArray(target) &&
+        !Array.isArray(source)) {
+
+        target = exports.arrayToObject(target);
+    }
+
+    var keys = Object.keys(source);
+    for (var k = 0, kl = keys.length; k < kl; ++k) {
+        var key = keys[k];
+        var value = source[key];
+
+        if (!target[key]) {
+            target[key] = value;
+        }
+        else {
+            target[key] = exports.merge(target[key], value);
+        }
+    }
+
+    return target;
+};
+
+
+exports.decode = function (str) {
+
+    try {
+        return decodeURIComponent(str.replace(/\+/g, ' '));
+    } catch (e) {
+        return str;
+    }
+};
+
+
+exports.compact = function (obj, refs) {
+
+    if (typeof obj !== 'object' ||
+        obj === null) {
+
+        return obj;
+    }
+
+    refs = refs || [];
+    var lookup = refs.indexOf(obj);
+    if (lookup !== -1) {
+        return refs[lookup];
+    }
+
+    refs.push(obj);
+
+    if (Array.isArray(obj)) {
+        var compacted = [];
+
+        for (var i = 0, il = obj.length; i < il; ++i) {
+            if (typeof obj[i] !== 'undefined') {
+                compacted.push(obj[i]);
+            }
+        }
+
+        return compacted;
+    }
+
+    var keys = Object.keys(obj);
+    for (i = 0, il = keys.length; i < il; ++i) {
+        var key = keys[i];
+        obj[key] = exports.compact(obj[key], refs);
+    }
+
+    return obj;
+};
+
+
+exports.isRegExp = function (obj) {
+    return Object.prototype.toString.call(obj) === '[object RegExp]';
+};
+
+
+exports.isBuffer = function (obj) {
+
+    if (obj === null ||
+        typeof obj === 'undefined') {
+
+        return false;
+    }
+
+    return !!(obj.constructor &&
+        obj.constructor.isBuffer &&
+        obj.constructor.isBuffer(obj));
+};
+
+},{}],12:[function(_dereq_,module,exports){
 var _ = _dereq_('underscore');
 var handlebars_helper = _dereq_('handlebars-helper');
 var EventEmitter = _dereq_('events').EventEmitter;
@@ -1205,7 +1617,7 @@ SolidusClient.prototype.render = function(view, params, callback) {
 
 module.exports = SolidusClient;
 
-},{"./lib/resource.js":9,"./lib/view.js":11,"events":2,"handlebars-helper":13,"underscore":119,"util":6}],8:[function(_dereq_,module,exports){
+},{"./lib/resource.js":14,"./lib/view.js":16,"events":2,"handlebars-helper":18,"underscore":119,"util":6}],13:[function(_dereq_,module,exports){
 /*
  * Copyright (c) 2010 Nick Galbreath
  * http://code.google.com/p/stringencoders/source/browse/#svn/trunk/javascript
@@ -1330,7 +1742,7 @@ base64.encode = function(s) {
 
 module.exports = base64;
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],14:[function(_dereq_,module,exports){
 var DYNAMIC_SEGMENTS = /\{([^\}]*)\}/ig;
 var DEFAULT_ENCODING = 'UTF8';
 var DEFAULT_SOLIDUS_API_ROUTE = '/api/';
@@ -1634,12 +2046,12 @@ var processDataStatus = function(data, callback) {
 
 module.exports = Resource;
 
-},{"./base64":8,"./util":10,"extend":12,"qs":111,"superagent":116,"underscore":119}],10:[function(_dereq_,module,exports){
+},{"./base64":13,"./util":15,"extend":17,"qs":7,"superagent":116,"underscore":119}],15:[function(_dereq_,module,exports){
 module.exports.isNode = !(typeof window !== 'undefined' && window !== null);
 
 module.exports.supportsCORS = !module.exports.isNode && (typeof XMLHttpRequest !== 'undefined') && ('withCredentials' in new XMLHttpRequest());
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 var _ = _dereq_('underscore');
 
 var util = _dereq_('./util');
@@ -1782,14 +2194,22 @@ var preprocessContextAsync = function(callback) {
 
 module.exports = View;
 
-},{"./util":10,"underscore":119}],12:[function(_dereq_,module,exports){
+},{"./util":15,"underscore":119}],17:[function(_dereq_,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
-var toString = Object.prototype.toString;
+var toStr = Object.prototype.toString;
 var undefined;
+
+var isArray = function isArray(arr) {
+	if (typeof Array.isArray === 'function') {
+		return Array.isArray(arr);
+	}
+
+	return toStr.call(arr) === '[object Array]';
+};
 
 var isPlainObject = function isPlainObject(obj) {
 	'use strict';
-	if (!obj || toString.call(obj) !== '[object Object]') {
+	if (!obj || toStr.call(obj) !== '[object Object]') {
 		return false;
 	}
 
@@ -1841,10 +2261,10 @@ module.exports = function extend() {
 				}
 
 				// Recurse if we're merging plain objects or arrays
-				if (deep && copy && (isPlainObject(copy) || (copyIsArray = Array.isArray(copy)))) {
+				if (deep && copy && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) {
 					if (copyIsArray) {
 						copyIsArray = false;
-						clone = src && Array.isArray(src) ? src : [];
+						clone = src && isArray(src) ? src : [];
 					} else {
 						clone = src && isPlainObject(src) ? src : {};
 					}
@@ -1865,9 +2285,9 @@ module.exports = function extend() {
 };
 
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 module.exports = _dereq_('./lib');
-},{"./lib":38}],14:[function(_dereq_,module,exports){
+},{"./lib":43}],19:[function(_dereq_,module,exports){
 module.exports = function(){
 	var numbers = Array.prototype.slice.call( arguments, 0, -1 );
 	var result = 0;
@@ -1876,7 +2296,7 @@ module.exports = function(){
 	}
 	return result;
 };
-},{}],15:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 // Modified form of `timeago` helper from https://github.com/assemble/handlebars-helpers
 
 var newDate = _dereq_('new-date');
@@ -1902,7 +2322,7 @@ module.exports = function( date ){
 	if( Math.floor( seconds ) <= 1 ) return 'Just now';
 	else return Math.floor( seconds ) +' seconds ago';
 };
-},{"new-date":105}],16:[function(_dereq_,module,exports){
+},{"new-date":110}],21:[function(_dereq_,module,exports){
 module.exports = function( collection, start, end, options ){
 	options = options || end;
 	if( typeof start !== 'number' ) return;
@@ -1914,7 +2334,7 @@ module.exports = function( collection, start, end, options ){
 	}
 	return result;
 };
-},{}],17:[function(_dereq_,module,exports){
+},{}],22:[function(_dereq_,module,exports){
 module.exports = function( collection, item, options ){
 	// string check
 	if( typeof collection === 'string' ){
@@ -1933,7 +2353,7 @@ module.exports = function( collection, item, options ){
 	}
 	return options.inverse(this);
 };
-},{}],18:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 module.exports = function(){
 	var numbers = Array.prototype.slice.call( arguments, 1, -1 );
 	var result = arguments[0];
@@ -1942,11 +2362,11 @@ module.exports = function(){
 	}
 	return result;
 };
-},{}],19:[function(_dereq_,module,exports){
+},{}],24:[function(_dereq_,module,exports){
 module.exports = function( string ){
 	return encodeURIComponent( string );	
 };
-},{}],20:[function(_dereq_,module,exports){
+},{}],25:[function(_dereq_,module,exports){
 module.exports = function( left, right, exact, options ){
 	options = options || exact;
 	exact = ( exact === 'exact' ) ? true : false;
@@ -1954,7 +2374,7 @@ module.exports = function( left, right, exact, options ){
 	if( is_equal ) return options.fn(this);
 	return options.inverse(this);
 };
-},{}],21:[function(_dereq_,module,exports){
+},{}],26:[function(_dereq_,module,exports){
 module.exports = function( collection, count, options ){
 	options = options || count;
 	count = ( typeof count === 'number' ) ? count : 1;
@@ -1969,7 +2389,7 @@ module.exports = function( collection, count, options ){
 	}
 	return result;
 };
-},{}],22:[function(_dereq_,module,exports){
+},{}],27:[function(_dereq_,module,exports){
 var strftimeTZ = _dereq_('strftime').strftimeTZ;
 var newDate = _dereq_('new-date');
 
@@ -1978,7 +2398,7 @@ module.exports = function( date_string, format, offset ){
 	var date = newDate( date_string );
 	return strftimeTZ( format, date, offset );
 };
-},{"new-date":105,"strftime":110}],23:[function(_dereq_,module,exports){
+},{"new-date":110,"strftime":115}],28:[function(_dereq_,module,exports){
 module.exports = function( left, right, equal, options ){
 	options = options || equal;
 	equal = ( equal === 'equal' ) ? true : false;
@@ -1986,7 +2406,7 @@ module.exports = function( left, right, equal, options ){
 	if( is_greater ) return options.fn( this );
 	return options.inverse( this );
 };
-},{}],24:[function(_dereq_,module,exports){
+},{}],29:[function(_dereq_,module,exports){
 module.exports = function( collection, separator ){
 	separator = ( typeof separator === 'string' ) ? separator : '';
 	// if the collectoin is an array this is easy
@@ -2000,7 +2420,7 @@ module.exports = function( collection, separator ){
 	}
 	return result.slice( 0, -separator.length );
 };
-},{}],25:[function(_dereq_,module,exports){
+},{}],30:[function(_dereq_,module,exports){
 var _isArray = _dereq_('lodash.isarray');
 var _reduce = _dereq_('lodash.reduce');
 
@@ -2024,7 +2444,7 @@ module.exports = function( collection, count, options ){
 	}, '' );
 	return result;
 };
-},{"lodash.isarray":39,"lodash.reduce":41}],26:[function(_dereq_,module,exports){
+},{"lodash.isarray":44,"lodash.reduce":46}],31:[function(_dereq_,module,exports){
 module.exports = function( collection ){
 	if( collection.length ) return collection.length;
 	var length = 0;
@@ -2035,7 +2455,7 @@ module.exports = function( collection ){
 	}
 	return length;
 };
-},{}],27:[function(_dereq_,module,exports){
+},{}],32:[function(_dereq_,module,exports){
 module.exports = function( left, right, equal, options ){
 	options = options || equal;
 	equal = ( equal === 'equal' ) ? true : false;
@@ -2043,11 +2463,11 @@ module.exports = function( left, right, equal, options ){
 	if( is_greater ) return options.fn( this );
 	return options.inverse( this );
 };
-},{}],28:[function(_dereq_,module,exports){
+},{}],33:[function(_dereq_,module,exports){
 module.exports = function( string ){
 	return ( string || '' ).toLowerCase();	
 };
-},{}],29:[function(_dereq_,module,exports){
+},{}],34:[function(_dereq_,module,exports){
 module.exports = function(){
 	var numbers = Array.prototype.slice.call( arguments, 1, -1 );
 	var result = arguments[0];
@@ -2056,7 +2476,7 @@ module.exports = function(){
 	}
 	return result;
 };
-},{}],30:[function(_dereq_,module,exports){
+},{}],35:[function(_dereq_,module,exports){
 module.exports = function( collection, start, amount, options ){
 	options = options || amount;
 	if( typeof start !== 'number' ) return;
@@ -2068,11 +2488,11 @@ module.exports = function( collection, start, amount, options ){
 	}
 	return result;
 };
-},{}],31:[function(_dereq_,module,exports){
+},{}],36:[function(_dereq_,module,exports){
 module.exports = function( string, to_replace, replacement ){
 	return ( string || '' ).replace( to_replace, replacement );
 };
-},{}],32:[function(_dereq_,module,exports){
+},{}],37:[function(_dereq_,module,exports){
 module.exports = function( collection, options ){
 	var result = '';
 	for( var i = collection.length - 1; i >= 0; i-- ){
@@ -2080,7 +2500,7 @@ module.exports = function( collection, options ){
 	}
 	return result;
 };
-},{}],33:[function(_dereq_,module,exports){
+},{}],38:[function(_dereq_,module,exports){
 // Simple shuffling method based off of http://bost.ocks.org/mike/shuffle/
 var shuffle = function( array ){
 	var i = array.length, j, swap;
@@ -2101,7 +2521,7 @@ module.exports = function( collection, options ){
 	}
 	return result;
 };
-},{}],34:[function(_dereq_,module,exports){
+},{}],39:[function(_dereq_,module,exports){
 module.exports = function(){
 	var numbers = Array.prototype.slice.call( arguments, 1, -1 );
 	var result = parseFloat( arguments[0], 10 );
@@ -2110,7 +2530,7 @@ module.exports = function(){
 	}
 	return result;
 };
-},{}],35:[function(_dereq_,module,exports){
+},{}],40:[function(_dereq_,module,exports){
 module.exports = function( number, zero, options ){
 	options = options || zero;
 	zero = ( zero === 'zero' ) ? true : false;
@@ -2124,11 +2544,11 @@ module.exports = function( number, zero, options ){
 	}
 	return result;
 };
-},{}],36:[function(_dereq_,module,exports){
+},{}],41:[function(_dereq_,module,exports){
 module.exports = function( string ){
 	return ( string || '' ).toUpperCase();
 };
-},{}],37:[function(_dereq_,module,exports){
+},{}],42:[function(_dereq_,module,exports){
 module.exports = function( collection, key, value, limit, options ){
 	options = options || limit;
 	if( typeof limit !== 'number' ) limit = Infinity;
@@ -2143,7 +2563,7 @@ module.exports = function( collection, key, value, limit, options ){
 	}
 	return result;
 };
-},{}],38:[function(_dereq_,module,exports){
+},{}],43:[function(_dereq_,module,exports){
 var helpers = {
 	// string
 	lowercase: _dereq_('./helpers/lowercase.js'),
@@ -2184,7 +2604,7 @@ module.exports.help = function( Handlebars ){
 
 module.exports.helpers = helpers;
 
-},{"./helpers/add.js":14,"./helpers/ago.js":15,"./helpers/between.js":16,"./helpers/contains.js":17,"./helpers/divide.js":18,"./helpers/encode.js":19,"./helpers/equal.js":20,"./helpers/first.js":21,"./helpers/formatDate.js":22,"./helpers/greater.js":23,"./helpers/join.js":24,"./helpers/last.js":25,"./helpers/length.js":26,"./helpers/less.js":27,"./helpers/lowercase.js":28,"./helpers/multiply.js":29,"./helpers/range.js":30,"./helpers/replace.js":31,"./helpers/reverse.js":32,"./helpers/shuffle.js":33,"./helpers/subtract.js":34,"./helpers/times.js":35,"./helpers/uppercase.js":36,"./helpers/where.js":37}],39:[function(_dereq_,module,exports){
+},{"./helpers/add.js":19,"./helpers/ago.js":20,"./helpers/between.js":21,"./helpers/contains.js":22,"./helpers/divide.js":23,"./helpers/encode.js":24,"./helpers/equal.js":25,"./helpers/first.js":26,"./helpers/formatDate.js":27,"./helpers/greater.js":28,"./helpers/join.js":29,"./helpers/last.js":30,"./helpers/length.js":31,"./helpers/less.js":32,"./helpers/lowercase.js":33,"./helpers/multiply.js":34,"./helpers/range.js":35,"./helpers/replace.js":36,"./helpers/reverse.js":37,"./helpers/shuffle.js":38,"./helpers/subtract.js":39,"./helpers/times.js":40,"./helpers/uppercase.js":41,"./helpers/where.js":42}],44:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2231,7 +2651,7 @@ var isArray = nativeIsArray || function(value) {
 
 module.exports = isArray;
 
-},{"lodash._isnative":40}],40:[function(_dereq_,module,exports){
+},{"lodash._isnative":45}],45:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2267,7 +2687,7 @@ function isNative(value) {
 
 module.exports = isNative;
 
-},{}],41:[function(_dereq_,module,exports){
+},{}],46:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2336,7 +2756,7 @@ function reduce(collection, callback, accumulator, thisArg) {
 
 module.exports = reduce;
 
-},{"lodash.createcallback":42,"lodash.forown":78}],42:[function(_dereq_,module,exports){
+},{"lodash.createcallback":47,"lodash.forown":83}],47:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.3 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2419,7 +2839,7 @@ function createCallback(func, thisArg, argCount) {
 
 module.exports = createCallback;
 
-},{"lodash._basecreatecallback":43,"lodash._baseisequal":62,"lodash.isobject":71,"lodash.keys":73,"lodash.property":77}],43:[function(_dereq_,module,exports){
+},{"lodash._basecreatecallback":48,"lodash._baseisequal":67,"lodash.isobject":76,"lodash.keys":78,"lodash.property":82}],48:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2501,7 +2921,7 @@ function baseCreateCallback(func, thisArg, argCount) {
 
 module.exports = baseCreateCallback;
 
-},{"lodash._setbinddata":44,"lodash.bind":47,"lodash.identity":59,"lodash.support":60}],44:[function(_dereq_,module,exports){
+},{"lodash._setbinddata":49,"lodash.bind":52,"lodash.identity":64,"lodash.support":65}],49:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2546,9 +2966,9 @@ var setBindData = !defineProperty ? noop : function(func, value) {
 
 module.exports = setBindData;
 
-},{"lodash._isnative":45,"lodash.noop":46}],45:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
-},{}],46:[function(_dereq_,module,exports){
+},{"lodash._isnative":50,"lodash.noop":51}],50:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],51:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2576,7 +2996,7 @@ function noop() {
 
 module.exports = noop;
 
-},{}],47:[function(_dereq_,module,exports){
+},{}],52:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2618,7 +3038,7 @@ function bind(func, thisArg) {
 
 module.exports = bind;
 
-},{"lodash._createwrapper":48,"lodash._slice":58}],48:[function(_dereq_,module,exports){
+},{"lodash._createwrapper":53,"lodash._slice":63}],53:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2726,7 +3146,7 @@ function createWrapper(func, bitmask, partialArgs, partialRightArgs, thisArg, ar
 
 module.exports = createWrapper;
 
-},{"lodash._basebind":49,"lodash._basecreatewrapper":53,"lodash._slice":58,"lodash.isfunction":57}],49:[function(_dereq_,module,exports){
+},{"lodash._basebind":54,"lodash._basecreatewrapper":58,"lodash._slice":63,"lodash.isfunction":62}],54:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2790,7 +3210,7 @@ function baseBind(bindData) {
 
 module.exports = baseBind;
 
-},{"lodash._basecreate":50,"lodash._setbinddata":44,"lodash._slice":58,"lodash.isobject":71}],50:[function(_dereq_,module,exports){
+},{"lodash._basecreate":55,"lodash._setbinddata":49,"lodash._slice":63,"lodash.isobject":76}],55:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
@@ -2836,11 +3256,11 @@ if (!nativeCreate) {
 module.exports = baseCreate;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"lodash._isnative":51,"lodash.isobject":71,"lodash.noop":52}],51:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
-},{}],52:[function(_dereq_,module,exports){
-module.exports=_dereq_(46)
-},{}],53:[function(_dereq_,module,exports){
+},{"lodash._isnative":56,"lodash.isobject":76,"lodash.noop":57}],56:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],57:[function(_dereq_,module,exports){
+module.exports=_dereq_(51)
+},{}],58:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2920,13 +3340,13 @@ function baseCreateWrapper(bindData) {
 
 module.exports = baseCreateWrapper;
 
-},{"lodash._basecreate":54,"lodash._setbinddata":44,"lodash._slice":58,"lodash.isobject":71}],54:[function(_dereq_,module,exports){
-module.exports=_dereq_(50)
-},{"lodash._isnative":55,"lodash.isobject":71,"lodash.noop":56}],55:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
-},{}],56:[function(_dereq_,module,exports){
-module.exports=_dereq_(46)
-},{}],57:[function(_dereq_,module,exports){
+},{"lodash._basecreate":59,"lodash._setbinddata":49,"lodash._slice":63,"lodash.isobject":76}],59:[function(_dereq_,module,exports){
+module.exports=_dereq_(55)
+},{"lodash._isnative":60,"lodash.isobject":76,"lodash.noop":61}],60:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],61:[function(_dereq_,module,exports){
+module.exports=_dereq_(51)
+},{}],62:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2955,7 +3375,7 @@ function isFunction(value) {
 
 module.exports = isFunction;
 
-},{}],58:[function(_dereq_,module,exports){
+},{}],63:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -2995,7 +3415,7 @@ function slice(array, start, end) {
 
 module.exports = slice;
 
-},{}],59:[function(_dereq_,module,exports){
+},{}],64:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3025,7 +3445,7 @@ function identity(value) {
 
 module.exports = identity;
 
-},{}],60:[function(_dereq_,module,exports){
+},{}],65:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
@@ -3069,9 +3489,9 @@ support.funcNames = typeof Function.name == 'string';
 module.exports = support;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"lodash._isnative":61}],61:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
-},{}],62:[function(_dereq_,module,exports){
+},{"lodash._isnative":66}],66:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],67:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3282,7 +3702,7 @@ function baseIsEqual(a, b, callback, isWhere, stackA, stackB) {
 
 module.exports = baseIsEqual;
 
-},{"lodash._getarray":63,"lodash._objecttypes":65,"lodash._releasearray":66,"lodash.forin":69,"lodash.isfunction":70}],63:[function(_dereq_,module,exports){
+},{"lodash._getarray":68,"lodash._objecttypes":70,"lodash._releasearray":71,"lodash.forin":74,"lodash.isfunction":75}],68:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3305,7 +3725,7 @@ function getArray() {
 
 module.exports = getArray;
 
-},{"lodash._arraypool":64}],64:[function(_dereq_,module,exports){
+},{"lodash._arraypool":69}],69:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3320,7 +3740,7 @@ var arrayPool = [];
 
 module.exports = arrayPool;
 
-},{}],65:[function(_dereq_,module,exports){
+},{}],70:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3342,7 +3762,7 @@ var objectTypes = {
 
 module.exports = objectTypes;
 
-},{}],66:[function(_dereq_,module,exports){
+},{}],71:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3369,9 +3789,9 @@ function releaseArray(array) {
 
 module.exports = releaseArray;
 
-},{"lodash._arraypool":67,"lodash._maxpoolsize":68}],67:[function(_dereq_,module,exports){
-module.exports=_dereq_(64)
-},{}],68:[function(_dereq_,module,exports){
+},{"lodash._arraypool":72,"lodash._maxpoolsize":73}],72:[function(_dereq_,module,exports){
+module.exports=_dereq_(69)
+},{}],73:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3386,7 +3806,7 @@ var maxPoolSize = 40;
 
 module.exports = maxPoolSize;
 
-},{}],69:[function(_dereq_,module,exports){
+},{}],74:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3442,9 +3862,9 @@ var forIn = function(collection, callback, thisArg) {
 
 module.exports = forIn;
 
-},{"lodash._basecreatecallback":43,"lodash._objecttypes":65}],70:[function(_dereq_,module,exports){
-module.exports=_dereq_(57)
-},{}],71:[function(_dereq_,module,exports){
+},{"lodash._basecreatecallback":48,"lodash._objecttypes":70}],75:[function(_dereq_,module,exports){
+module.exports=_dereq_(62)
+},{}],76:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3485,9 +3905,9 @@ function isObject(value) {
 
 module.exports = isObject;
 
-},{"lodash._objecttypes":72}],72:[function(_dereq_,module,exports){
-module.exports=_dereq_(65)
-},{}],73:[function(_dereq_,module,exports){
+},{"lodash._objecttypes":77}],77:[function(_dereq_,module,exports){
+module.exports=_dereq_(70)
+},{}],78:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3525,9 +3945,9 @@ var keys = !nativeKeys ? shimKeys : function(object) {
 
 module.exports = keys;
 
-},{"lodash._isnative":74,"lodash._shimkeys":75,"lodash.isobject":71}],74:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
-},{}],75:[function(_dereq_,module,exports){
+},{"lodash._isnative":79,"lodash._shimkeys":80,"lodash.isobject":76}],79:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],80:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3567,9 +3987,9 @@ var shimKeys = function(object) {
 
 module.exports = shimKeys;
 
-},{"lodash._objecttypes":76}],76:[function(_dereq_,module,exports){
-module.exports=_dereq_(65)
-},{}],77:[function(_dereq_,module,exports){
+},{"lodash._objecttypes":81}],81:[function(_dereq_,module,exports){
+module.exports=_dereq_(70)
+},{}],82:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3611,7 +4031,7 @@ function property(key) {
 
 module.exports = property;
 
-},{}],78:[function(_dereq_,module,exports){
+},{}],83:[function(_dereq_,module,exports){
 /**
  * Lo-Dash 2.4.1 (Custom Build) <http://lodash.com/>
  * Build: `lodash modularize modern exports="npm" -o ./npm/`
@@ -3663,59 +4083,59 @@ var forOwn = function(collection, callback, thisArg) {
 
 module.exports = forOwn;
 
-},{"lodash._basecreatecallback":79,"lodash._objecttypes":100,"lodash.keys":101}],79:[function(_dereq_,module,exports){
-module.exports=_dereq_(43)
-},{"lodash._setbinddata":80,"lodash.bind":83,"lodash.identity":97,"lodash.support":98}],80:[function(_dereq_,module,exports){
-module.exports=_dereq_(44)
-},{"lodash._isnative":81,"lodash.noop":82}],81:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
-},{}],82:[function(_dereq_,module,exports){
-module.exports=_dereq_(46)
-},{}],83:[function(_dereq_,module,exports){
-module.exports=_dereq_(47)
-},{"lodash._createwrapper":84,"lodash._slice":96}],84:[function(_dereq_,module,exports){
+},{"lodash._basecreatecallback":84,"lodash._objecttypes":105,"lodash.keys":106}],84:[function(_dereq_,module,exports){
 module.exports=_dereq_(48)
-},{"lodash._basebind":85,"lodash._basecreatewrapper":90,"lodash._slice":96,"lodash.isfunction":95}],85:[function(_dereq_,module,exports){
+},{"lodash._setbinddata":85,"lodash.bind":88,"lodash.identity":102,"lodash.support":103}],85:[function(_dereq_,module,exports){
 module.exports=_dereq_(49)
-},{"lodash._basecreate":86,"lodash._setbinddata":80,"lodash._slice":96,"lodash.isobject":89}],86:[function(_dereq_,module,exports){
-module.exports=_dereq_(50)
-},{"lodash._isnative":87,"lodash.isobject":89,"lodash.noop":88}],87:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
+},{"lodash._isnative":86,"lodash.noop":87}],86:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],87:[function(_dereq_,module,exports){
+module.exports=_dereq_(51)
 },{}],88:[function(_dereq_,module,exports){
-module.exports=_dereq_(46)
-},{}],89:[function(_dereq_,module,exports){
-module.exports=_dereq_(71)
-},{"lodash._objecttypes":100}],90:[function(_dereq_,module,exports){
+module.exports=_dereq_(52)
+},{"lodash._createwrapper":89,"lodash._slice":101}],89:[function(_dereq_,module,exports){
 module.exports=_dereq_(53)
-},{"lodash._basecreate":91,"lodash._setbinddata":80,"lodash._slice":96,"lodash.isobject":94}],91:[function(_dereq_,module,exports){
-module.exports=_dereq_(50)
+},{"lodash._basebind":90,"lodash._basecreatewrapper":95,"lodash._slice":101,"lodash.isfunction":100}],90:[function(_dereq_,module,exports){
+module.exports=_dereq_(54)
+},{"lodash._basecreate":91,"lodash._setbinddata":85,"lodash._slice":101,"lodash.isobject":94}],91:[function(_dereq_,module,exports){
+module.exports=_dereq_(55)
 },{"lodash._isnative":92,"lodash.isobject":94,"lodash.noop":93}],92:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
+module.exports=_dereq_(45)
 },{}],93:[function(_dereq_,module,exports){
-module.exports=_dereq_(46)
+module.exports=_dereq_(51)
 },{}],94:[function(_dereq_,module,exports){
-module.exports=_dereq_(71)
-},{"lodash._objecttypes":100}],95:[function(_dereq_,module,exports){
-module.exports=_dereq_(57)
-},{}],96:[function(_dereq_,module,exports){
+module.exports=_dereq_(76)
+},{"lodash._objecttypes":105}],95:[function(_dereq_,module,exports){
 module.exports=_dereq_(58)
-},{}],97:[function(_dereq_,module,exports){
-module.exports=_dereq_(59)
+},{"lodash._basecreate":96,"lodash._setbinddata":85,"lodash._slice":101,"lodash.isobject":99}],96:[function(_dereq_,module,exports){
+module.exports=_dereq_(55)
+},{"lodash._isnative":97,"lodash.isobject":99,"lodash.noop":98}],97:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
 },{}],98:[function(_dereq_,module,exports){
-module.exports=_dereq_(60)
-},{"lodash._isnative":99}],99:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
-},{}],100:[function(_dereq_,module,exports){
-module.exports=_dereq_(65)
+module.exports=_dereq_(51)
+},{}],99:[function(_dereq_,module,exports){
+module.exports=_dereq_(76)
+},{"lodash._objecttypes":105}],100:[function(_dereq_,module,exports){
+module.exports=_dereq_(62)
 },{}],101:[function(_dereq_,module,exports){
-module.exports=_dereq_(73)
-},{"lodash._isnative":102,"lodash._shimkeys":103,"lodash.isobject":104}],102:[function(_dereq_,module,exports){
-module.exports=_dereq_(40)
+module.exports=_dereq_(63)
+},{}],102:[function(_dereq_,module,exports){
+module.exports=_dereq_(64)
 },{}],103:[function(_dereq_,module,exports){
-module.exports=_dereq_(75)
-},{"lodash._objecttypes":100}],104:[function(_dereq_,module,exports){
-module.exports=_dereq_(71)
-},{"lodash._objecttypes":100}],105:[function(_dereq_,module,exports){
+module.exports=_dereq_(65)
+},{"lodash._isnative":104}],104:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],105:[function(_dereq_,module,exports){
+module.exports=_dereq_(70)
+},{}],106:[function(_dereq_,module,exports){
+module.exports=_dereq_(78)
+},{"lodash._isnative":107,"lodash._shimkeys":108,"lodash.isobject":109}],107:[function(_dereq_,module,exports){
+module.exports=_dereq_(45)
+},{}],108:[function(_dereq_,module,exports){
+module.exports=_dereq_(80)
+},{"lodash._objecttypes":105}],109:[function(_dereq_,module,exports){
+module.exports=_dereq_(76)
+},{"lodash._objecttypes":105}],110:[function(_dereq_,module,exports){
 
 var is = _dereq_('is')
   , isodate = _dereq_('isodate')
@@ -3755,7 +4175,7 @@ function toMs (num) {
   if (num < 31557600000) return num * 1000;
   return num;
 }
-},{"./milliseconds":106,"./seconds":107,"is":108,"isodate":109}],106:[function(_dereq_,module,exports){
+},{"./milliseconds":111,"./seconds":112,"is":113,"isodate":114}],111:[function(_dereq_,module,exports){
 
 /**
  * Matcher.
@@ -3787,7 +4207,7 @@ exports.parse = function (millis) {
   millis = parseInt(millis, 10);
   return new Date(millis);
 };
-},{}],107:[function(_dereq_,module,exports){
+},{}],112:[function(_dereq_,module,exports){
 
 /**
  * Matcher.
@@ -3819,7 +4239,7 @@ exports.parse = function (seconds) {
   var millis = parseInt(seconds, 10) * 1000;
   return new Date(millis);
 };
-},{}],108:[function(_dereq_,module,exports){
+},{}],113:[function(_dereq_,module,exports){
 
 /**!
  * is
@@ -4523,7 +4943,7 @@ is.string = function (value) {
 };
 
 
-},{}],109:[function(_dereq_,module,exports){
+},{}],114:[function(_dereq_,module,exports){
 
 /**
  * Matcher, slightly modified from:
@@ -4592,7 +5012,7 @@ exports.is = function (string, strict) {
   if (strict && false === /^\d{4}-\d{2}-\d{2}/.test(string)) return false;
   return matcher.test(string);
 };
-},{}],110:[function(_dereq_,module,exports){
+},{}],115:[function(_dereq_,module,exports){
 //
 // strftime
 // github.com/samsonjs/strftime
@@ -4865,422 +5285,6 @@ exports.is = function (string, strict) {
   }
 
 }());
-
-},{}],111:[function(_dereq_,module,exports){
-module.exports = _dereq_('./lib/');
-
-},{"./lib/":112}],112:[function(_dereq_,module,exports){
-// Load modules
-
-var Stringify = _dereq_('./stringify');
-var Parse = _dereq_('./parse');
-
-
-// Declare internals
-
-var internals = {};
-
-
-module.exports = {
-    stringify: Stringify,
-    parse: Parse
-};
-
-},{"./parse":113,"./stringify":114}],113:[function(_dereq_,module,exports){
-// Load modules
-
-var Utils = _dereq_('./utils');
-
-
-// Declare internals
-
-var internals = {
-    delimiter: '&',
-    depth: 5,
-    arrayLimit: 20,
-    parameterLimit: 1000
-};
-
-
-internals.parseValues = function (str, options) {
-
-    var obj = {};
-    var parts = str.split(options.delimiter, options.parameterLimit === Infinity ? undefined : options.parameterLimit);
-
-    for (var i = 0, il = parts.length; i < il; ++i) {
-        var part = parts[i];
-        var pos = part.indexOf(']=') === -1 ? part.indexOf('=') : part.indexOf(']=') + 1;
-
-        if (pos === -1) {
-            obj[Utils.decode(part)] = '';
-        }
-        else {
-            var key = Utils.decode(part.slice(0, pos));
-            var val = Utils.decode(part.slice(pos + 1));
-
-            if (Object.prototype.hasOwnProperty(key)) {
-                continue;
-            }
-
-            if (!obj.hasOwnProperty(key)) {
-                obj[key] = val;
-            }
-            else {
-                obj[key] = [].concat(obj[key]).concat(val);
-            }
-        }
-    }
-
-    return obj;
-};
-
-
-internals.parseObject = function (chain, val, options) {
-
-    if (!chain.length) {
-        return val;
-    }
-
-    var root = chain.shift();
-
-    var obj = {};
-    if (root === '[]') {
-        obj = [];
-        obj = obj.concat(internals.parseObject(chain, val, options));
-    }
-    else {
-        var cleanRoot = root[0] === '[' && root[root.length - 1] === ']' ? root.slice(1, root.length - 1) : root;
-        var index = parseInt(cleanRoot, 10);
-        var indexString = '' + index;
-        if (!isNaN(index) &&
-            root !== cleanRoot &&
-            indexString === cleanRoot &&
-            index >= 0 &&
-            index <= options.arrayLimit) {
-
-            obj = [];
-            obj[index] = internals.parseObject(chain, val, options);
-        }
-        else {
-            obj[cleanRoot] = internals.parseObject(chain, val, options);
-        }
-    }
-
-    return obj;
-};
-
-
-internals.parseKeys = function (key, val, options) {
-
-    if (!key) {
-        return;
-    }
-
-    // The regex chunks
-
-    var parent = /^([^\[\]]*)/;
-    var child = /(\[[^\[\]]*\])/g;
-
-    // Get the parent
-
-    var segment = parent.exec(key);
-
-    // Don't allow them to overwrite object prototype properties
-
-    if (Object.prototype.hasOwnProperty(segment[1])) {
-        return;
-    }
-
-    // Stash the parent if it exists
-
-    var keys = [];
-    if (segment[1]) {
-        keys.push(segment[1]);
-    }
-
-    // Loop through children appending to the array until we hit depth
-
-    var i = 0;
-    while ((segment = child.exec(key)) !== null && i < options.depth) {
-
-        ++i;
-        if (!Object.prototype.hasOwnProperty(segment[1].replace(/\[|\]/g, ''))) {
-            keys.push(segment[1]);
-        }
-    }
-
-    // If there's a remainder, just add whatever is left
-
-    if (segment) {
-        keys.push('[' + key.slice(segment.index) + ']');
-    }
-
-    return internals.parseObject(keys, val, options);
-};
-
-
-module.exports = function (str, options) {
-
-    if (str === '' ||
-        str === null ||
-        typeof str === 'undefined') {
-
-        return {};
-    }
-
-    options = options || {};
-    options.delimiter = typeof options.delimiter === 'string' || Utils.isRegExp(options.delimiter) ? options.delimiter : internals.delimiter;
-    options.depth = typeof options.depth === 'number' ? options.depth : internals.depth;
-    options.arrayLimit = typeof options.arrayLimit === 'number' ? options.arrayLimit : internals.arrayLimit;
-    options.parameterLimit = typeof options.parameterLimit === 'number' ? options.parameterLimit : internals.parameterLimit;
-
-    var tempObj = typeof str === 'string' ? internals.parseValues(str, options) : str;
-    var obj = {};
-
-    // Iterate over the keys and setup the new object
-
-    var keys = Object.keys(tempObj);
-    for (var i = 0, il = keys.length; i < il; ++i) {
-        var key = keys[i];
-        var newObj = internals.parseKeys(key, tempObj[key], options);
-        obj = Utils.merge(obj, newObj);
-    }
-
-    return Utils.compact(obj);
-};
-
-},{"./utils":115}],114:[function(_dereq_,module,exports){
-// Load modules
-
-var Utils = _dereq_('./utils');
-
-
-// Declare internals
-
-var internals = {
-    delimiter: '&',
-    arrayPrefixGenerators: {
-        brackets: function (prefix, key) {
-            return prefix + '[]';
-        },
-        indices: function (prefix, key) {
-            return prefix + '[' + key + ']';
-        },
-        repeat: function (prefix, key) {
-            return prefix;
-        }
-    }
-};
-
-
-internals.stringify = function (obj, prefix, generateArrayPrefix) {
-
-    if (Utils.isBuffer(obj)) {
-        obj = obj.toString();
-    }
-    else if (obj instanceof Date) {
-        obj = obj.toISOString();
-    }
-    else if (obj === null) {
-        obj = '';
-    }
-
-    if (typeof obj === 'string' ||
-        typeof obj === 'number' ||
-        typeof obj === 'boolean') {
-
-        return [encodeURIComponent(prefix) + '=' + encodeURIComponent(obj)];
-    }
-
-    var values = [];
-
-    if (typeof obj === 'undefined') {
-        return values;
-    }
-
-    var objKeys = Object.keys(obj);
-    for (var i = 0, il = objKeys.length; i < il; ++i) {
-        var key = objKeys[i];
-        if (Array.isArray(obj)) {
-            values = values.concat(internals.stringify(obj[key], generateArrayPrefix(prefix, key), generateArrayPrefix));
-        }
-        else {
-            values = values.concat(internals.stringify(obj[key], prefix + '[' + key + ']', generateArrayPrefix));
-        }
-    }
-
-    return values;
-};
-
-
-module.exports = function (obj, options) {
-
-    options = options || {};
-    var delimiter = typeof options.delimiter === 'undefined' ? internals.delimiter : options.delimiter;
-
-    var keys = [];
-
-    if (typeof obj !== 'object' ||
-        obj === null) {
-
-        return '';
-    }
-
-    var arrayFormat;
-    if (options.arrayFormat in internals.arrayPrefixGenerators) {
-        arrayFormat = options.arrayFormat;
-    }
-    else if ('indices' in options) {
-        arrayFormat = options.indices ? 'indices' : 'repeat';
-    }
-    else {
-        arrayFormat = 'indices';
-    }
-
-    var generateArrayPrefix = internals.arrayPrefixGenerators[arrayFormat];
-
-    var objKeys = Object.keys(obj);
-    for (var i = 0, il = objKeys.length; i < il; ++i) {
-        var key = objKeys[i];
-        keys = keys.concat(internals.stringify(obj[key], key, generateArrayPrefix));
-    }
-
-    return keys.join(delimiter);
-};
-
-},{"./utils":115}],115:[function(_dereq_,module,exports){
-// Load modules
-
-
-// Declare internals
-
-var internals = {};
-
-
-exports.arrayToObject = function (source) {
-
-    var obj = {};
-    for (var i = 0, il = source.length; i < il; ++i) {
-        if (typeof source[i] !== 'undefined') {
-
-            obj[i] = source[i];
-        }
-    }
-
-    return obj;
-};
-
-
-exports.merge = function (target, source) {
-
-    if (!source) {
-        return target;
-    }
-
-    if (typeof source !== 'object') {
-        if (Array.isArray(target)) {
-            target.push(source);
-        }
-        else {
-            target[source] = true;
-        }
-
-        return target;
-    }
-
-    if (typeof target !== 'object') {
-        target = [target].concat(source);
-        return target;
-    }
-
-    if (Array.isArray(target) &&
-        !Array.isArray(source)) {
-
-        target = exports.arrayToObject(target);
-    }
-
-    var keys = Object.keys(source);
-    for (var k = 0, kl = keys.length; k < kl; ++k) {
-        var key = keys[k];
-        var value = source[key];
-
-        if (!target[key]) {
-            target[key] = value;
-        }
-        else {
-            target[key] = exports.merge(target[key], value);
-        }
-    }
-
-    return target;
-};
-
-
-exports.decode = function (str) {
-
-    try {
-        return decodeURIComponent(str.replace(/\+/g, ' '));
-    } catch (e) {
-        return str;
-    }
-};
-
-
-exports.compact = function (obj, refs) {
-
-    if (typeof obj !== 'object' ||
-        obj === null) {
-
-        return obj;
-    }
-
-    refs = refs || [];
-    var lookup = refs.indexOf(obj);
-    if (lookup !== -1) {
-        return refs[lookup];
-    }
-
-    refs.push(obj);
-
-    if (Array.isArray(obj)) {
-        var compacted = [];
-
-        for (var i = 0, il = obj.length; i < il; ++i) {
-            if (typeof obj[i] !== 'undefined') {
-                compacted.push(obj[i]);
-            }
-        }
-
-        return compacted;
-    }
-
-    var keys = Object.keys(obj);
-    for (i = 0, il = keys.length; i < il; ++i) {
-        var key = keys[i];
-        obj[key] = exports.compact(obj[key], refs);
-    }
-
-    return obj;
-};
-
-
-exports.isRegExp = function (obj) {
-    return Object.prototype.toString.call(obj) === '[object RegExp]';
-};
-
-
-exports.isBuffer = function (obj) {
-
-    if (obj === null ||
-        typeof obj === 'undefined') {
-
-        return false;
-    }
-
-    return !!(obj.constructor &&
-        obj.constructor.isBuffer &&
-        obj.constructor.isBuffer(obj));
-};
 
 },{}],116:[function(_dereq_,module,exports){
 /**

@@ -1,3 +1,7 @@
+## 1.2.0 (Dec 3, 2015)
+
+ - Login prompt [[e75d3eb](https://github.com/SparkartGroupInc/universe-js/commit/e75d3ebd1bc84a73b3b32f760e7daf721b9aab48)]
+
 ## 1.1.3 (Apr 16, 2015)
 
  - Fix CORS and JSONP on older browsers [[e32b2e0](https://github.com/SparkartGroupInc/universe-js/commit/e32b2e03be31dfebd35f2908dae652b60d92bb90)]
