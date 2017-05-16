@@ -29,7 +29,7 @@ function linkify (fanclub, scope, processor) {
     if (url.match('login')) {
       module.exports.prompt(fanclub, url, processor);
     } else {
-      module.exports.setUrl(url);
+      // module.exports.setUrl(url);
     }
   });
 };
