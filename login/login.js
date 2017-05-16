@@ -24,12 +24,9 @@ function linkify (fanclub, scope, processor) {
     var url = link ? link.getAttribute('href') : null;
     if (!url) return;
 
-    event.preventDefault();
-
     if (url.match('login')) {
+      event.preventDefault();
       module.exports.prompt(fanclub, url, processor);
-    } else {
-      // module.exports.setUrl(url);
     }
   });
 };
