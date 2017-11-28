@@ -1,6 +1,7 @@
 var assert = require('assert');
 var sinon = require('sinon');
 var qs = require('query-string');
+var Delegate = require('dom-delegate');
 
 var util = require('../../lib/util');
 var login = require('../../login');
@@ -70,11 +71,17 @@ describe('Login', function() {
       addLink('/something/else');
 
       mock.expects('prompt').never();
-      mock.expects('setUrl').withArgs('/something/else');
+      mock.expects('setUrl').never();
 
       login.linkify(fanclub, div);
+
+      var delegate = new Delegate(div);
+      delegate.on('click', 'a', function (event) {
+        event.preventDefault();
+        done();
+      });
+
       clickLink();
-      done();
     });
   });
 
