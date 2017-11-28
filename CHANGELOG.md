@@ -1,3 +1,19 @@
+## 1.2.4 (Nov 28, 2017)
+
+ - Update solidus-client, fix old tests [[68d7995](https://github.com/sparkartgroup/universe-js/commit/68d79955653b4ca2abb0a420fd497bd4d4585273)]
+
+## 1.2.3 (Nov 13, 2017)
+
+ - HTTPS [[49b0e53](https://github.com/sparkartgroup/universe-js/commit/49b0e53ea45e5f0b408457d52fa6922035797634)]
+
+## 1.2.2 (May 15, 2017)
+
+ - Fix broken links [[c9773a0](https://github.com/sparkartgroup/universe-js/commit/c9773a09b8413caff65bd166c8ae918c79e6fad8)]
+
+## 1.2.1 (May 15, 2017)
+
+ - Don't hijack non-login links [[5479725](https://github.com/sparkartgroup/universe-js/commit/54797254ebf7947b1a94b9ba16a8e2b24b275dd0)]
+
 ## 1.2.0 (Dec 3, 2015)
 
  - Login prompt [[e75d3eb](https://github.com/SparkartGroupInc/universe-js/commit/e75d3ebd1bc84a73b3b32f760e7daf721b9aab48)]
