@@ -26,7 +26,7 @@
     "cookie": "^0.1.2",
     "dom-delegate": "^2.0.3",
     "query-string": "^2.1.0",
-    "solidus-client": "solidusjs/solidus-client#2457163f6fe51b58113555f42254989ee7c2d66e"
+    "solidus-client": "^1.3.4"
   },
   "devDependencies": {
     "browserstack-webdriver": "~2.41.1",
