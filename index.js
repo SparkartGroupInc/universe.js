@@ -1,6 +1,6 @@
 var API_URLS = {
-  test_in:    'http://localhost:8081/i/api/v1', // With a logged in user
-  test_out:   'http://localhost:8081/o/api/v1', // With no logged in user
+  test_in:    'http://lvh.me:8081/i/api/v1', // With a logged in user
+  test_out:   'http://lvh.me:8081/o/api/v1', // With no logged in user
   staging:    'https://staging.services.sparkart.net/api/v1',
   production: 'https://services.sparkart.net/api/v1'
 };
