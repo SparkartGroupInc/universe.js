@@ -1,3 +1,8 @@
+## 1.2.5 (Apr 23, 2018)
+
+ - Use BrowserStack real devices [[9e592f6](https://github.com/sparkartgroup/universe-js/commit/9e592f690d6a3aa0d3475d5d3afd4d9375f825f5)]
+ - Use latest solidus-client [[d0dd165](https://github.com/sparkartgroup/universe-js/commit/d0dd16533bf0c84be5f8385a7729a0a3414c101c)]
+
 ## 1.2.4 (Nov 28, 2017)
 
  - Update solidus-client, fix old tests [[68d7995](https://github.com/sparkartgroup/universe-js/commit/68d79955653b4ca2abb0a420fd497bd4d4585273)]
