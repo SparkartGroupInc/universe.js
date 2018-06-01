@@ -115,7 +115,7 @@ function popup (url) {
 
   var options = {
     width: 560,
-    height: 385,
+    height: 420,
     resizable: 0,
     menubar: 0,
     location: 0,
