@@ -1,3 +1,7 @@
+## 1.2.6 (Jun 4, 2018)
+
+ - Adjust popup height to accommodate new GDPR disclaimer [[0ffcb93](https://github.com/sparkartgroup/universe-js/commit/0ffcb937db9f8ddd6396b2d28d2c98c55aa1e98e)]
+
 ## 1.2.5 (Apr 23, 2018)
 
  - Use BrowserStack real devices [[9e592f6](https://github.com/sparkartgroup/universe-js/commit/9e592f690d6a3aa0d3475d5d3afd4d9375f825f5)]
