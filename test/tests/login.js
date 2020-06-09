@@ -88,15 +88,14 @@ describe('Login', function() {
   describe('.prompt', function() {
     var expectRedirect = function(options) {
       options.redirect || (options.redirect = config.host + '/');
+      options.popup = 1;
+      mock.expects('setLoginRedirect').withArgs(options.redirect).twice();
 
       if (util.isMobile) {
         mock.expects('setUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
-        mock.expects('setCookie').never();
         mock.expects('openUrl').never();
       } else {
-        options.popup = 1;
         mock.expects('setUrl').never();
-        mock.expects('setCookie').withArgs(options.redirect).twice();
         mock.expects('openUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
       }
     };

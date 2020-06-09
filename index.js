@@ -1,6 +1,5 @@
 var API_URLS = {
-  test_in:    'http://lvh.me:8081/i/api/v1', // With a logged in user
-  test_out:   'http://lvh.me:8081/o/api/v1', // With no logged in user
+  test:       'http://lvh.me:8081/api/v1',
   staging:    'https://staging.services.sparkart.net/api/v1',
   production: 'https://services.sparkart.net/api/v1'
 };
@@ -45,29 +44,28 @@ Universe.prototype.render = function() {
 };
 
 Universe.prototype.get = function(endpoint, callback) {
-  this.getResource(this.resource(endpoint), null, callback);
+  requestResource.call(this, 'get', endpoint, null, callback);
 };
 
-Universe.prototype.post = function(endpoint, data, callback) {
-  var resource = new Resource(this.resource(endpoint));
-  if (resource.requestType() == 'jsonp') {
-    resource.options.query || (resource.options.query = {});
-    resource.options.query._method = 'POST';
-  }
-
-  resource.post(data, function(err, response) {
-    callback(err, response ? response.data : null);
-  });
+Universe.prototype.post = function(endpoint, payload, callback) {
+  requestResource.call(this, 'post', endpoint, payload, callback);
 };
 
 Universe.prototype.resource = function(endpoint) {
-  return {
+  const resource = {
     url: resourceUrl.call(this, endpoint),
     query: {
       key: this.key
     },
-    with_credentials: true
+    with_credentials: true,
+    headers: {}
   };
+
+  if (sessionStorage.getItem('universeAccessToken')) {
+    resource.headers.Authorization = 'Bearer ' + sessionStorage.getItem('universeAccessToken');
+  }
+
+  return resource;
 };
 
 Universe.prototype.jsonpResource = function(endpoint) {
@@ -83,26 +81,20 @@ var getFanclub = function(callback) {
   if (this.context && this.context.resources && this.context.resources.fanclub) {
     callback(null, this.context.resources.fanclub.fanclub);
   } else {
-    this.getResource(this.resource('/fanclub'), null, function(err, data) {
+    this.get('/fanclub', function(err, data) {
       callback(err, data ? data.fanclub : null);
     });
   }
 };
 
 var getCustomer = function(callback) {
-  var self = this;
-
-  self.getResource(self.jsonpResource('/account/status'), null, function(err, data) {
-    if (err) return callback(err);
-
-    if (data.logged_in) {
-      self.getResource(self.resource('/account'), null, function(err, data) {
-        callback(err, data ? data.customer : null);
-      });
-    } else {
-      callback();
-    }
-  });
+  if (sessionStorage.getItem('universeAccessToken')) {
+    this.get('/account', function(err, data) {
+      callback(err, data ? data.customer : null);
+    });
+  } else {
+    callback();
+  }
 };
 
 var expandResourcesEndpoints = function(view) {
@@ -122,5 +114,63 @@ var expandResourcesEndpoints = function(view) {
 var resourceUrl = function(endpoint) {
   return (API_URLS[this.environment] || API_URLS['production']) + endpoint;
 };
+
+var requestResource = function(method, endpoint, payload, callback) {
+  const self = this;
+
+  validateTokens.call(self, function(err) {
+    const cb = (err, response) => callback(err, response ? response.data : undefined);
+    const resource = new Resource(self.resource(endpoint), self.resources_options);
+    if (method === 'get') {
+      resource.get(cb);
+    } else if (method === 'post') {
+      if (resource.requestType() == 'jsonp') {
+        resource.options.query || (resource.options.query = {});
+        resource.options.query._method = 'POST';
+      }
+      resource.post(payload, cb);
+    }
+  });
+}
+
+var validateTokens = function(callback) {
+  const now = new Date().getTime();
+
+  if (sessionStorage.getItem('universeAccessToken') && now < sessionStorage.getItem('universeAccessTokenExpiration')) {
+    // Valid access token
+    return callback();
+  } else {
+    sessionStorage.removeItem('universeAccessToken');
+    sessionStorage.removeItem('universeAccessTokenExpiration');
+  }
+
+  if (!sessionStorage.getItem('universeRefreshToken') || now >= (sessionStorage.getItem('universeRefreshTokenExpiration') || Infinity)) {
+    // Missing or expired refresh token
+    sessionStorage.removeItem('universeRefreshToken');
+    sessionStorage.removeItem('universeRefreshTokenExpiration');
+    return callback(true);
+  }
+
+  // Refresh the access token
+  const options = this.resource('/login/refresh');
+  options.headers['X-Refresh-Token'] = sessionStorage.getItem('universeRefreshToken');
+  const resource = new Resource(options, this.resources_options);
+  resource.post(null, function (err, response) {
+    if (err) {
+      if (err.status === 401) {
+        // Invalid refresh token
+        sessionStorage.removeItem('universeRefreshToken');
+        sessionStorage.removeItem('universeRefreshTokenExpiration');
+      }
+      callback(err);
+    } else {
+      sessionStorage.setItem('universeAccessToken', response.data.access_token);
+      sessionStorage.setItem('universeAccessTokenExpiration', response.data.access_token_expires_at);
+      sessionStorage.setItem('universeRefreshToken', response.data.refresh_token);
+      sessionStorage.setItem('universeRefreshTokenExpiration', response.data.refresh_token_expires_at);
+      callback();
+    }
+  });
+}
 
 module.exports = Universe;

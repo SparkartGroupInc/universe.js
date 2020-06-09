@@ -23,7 +23,6 @@
     "test-server": "./node_modules/.bin/gulp test-server"
   },
   "dependencies": {
-    "cookie": "^0.1.2",
     "dom-delegate": "^2.0.3",
     "query-string": "^2.1.0",
     "solidus-client": "^1.3.5"

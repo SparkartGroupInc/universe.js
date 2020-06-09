@@ -1,4 +1,3 @@
-var cookie = require('cookie');
 var Delegate = require('dom-delegate');
 var qs = require('query-string');
 
@@ -60,17 +59,18 @@ function prompt (fanclub, options, processor) {
     options = undefined;
   }
 
+  // Set the "popup=1" option even for mobile, to force a redirect to /login/reload,
+  // which is the page responsible with storing the returned Universe tokens
+  var login = config(fanclub, options, true, processor);
+
+  // Set desired final destination in session storage to preserve through intermediary redirects
+  module.exports.setLoginRedirect(login.redirect);
+
   if (util.isMobile) {
-    module.exports.setUrl(config(fanclub, options, false, processor).url);
+    module.exports.setUrl(login.url);
   } else {
-    var login = config(fanclub, options, true, processor);
-
-    // Set desired final destination in a cookie to preserve through intermediary redirects
-    module.exports.setCookie(login.redirect);
-
     popup(login.url);
   }
-
 };
 
 /**
@@ -138,7 +138,7 @@ module.exports = {
 
   // Exposed for testing
   setUrl: function(url) {window.location.href = url},
-  setCookie: function(url) {document.cookie = cookie.serialize('redirect', url, {path: '/login'})},
+  setLoginRedirect: function(url) {sessionStorage.setItem('universeLoginRedirect', url)},
   openUrl: function(url, options) {
     // HACK: Required so the referrer is set properly in IE
     var wnd = window.open('', 'universeLogin', qs.stringify(options).replace(/&/g, ','));
