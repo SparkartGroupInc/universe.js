@@ -18,6 +18,20 @@ describe('Login', function() {
   var sandbox;
   var mock;
 
+  const tokensLogin = () => {
+    sessionStorage.setItem('universeAccessToken', 'valid_access_token');
+    sessionStorage.setItem('universeAccessTokenExpiration', '12345');
+    sessionStorage.setItem('universeRefreshToken', 'valid_refresh_token');
+    sessionStorage.setItem('universeRefreshTokenExpiration', '54321');
+  };
+
+  const tokensLogout = () => {
+    sessionStorage.removeItem('universeAccessToken');
+    sessionStorage.removeItem('universeAccessTokenExpiration');
+    sessionStorage.removeItem('universeRefreshToken');
+    sessionStorage.removeItem('universeRefreshTokenExpiration');
+  };
+
   beforeEach(function() {
     sandbox = sinon.sandbox.create();
     mock = sandbox.mock(login);
@@ -26,6 +40,7 @@ describe('Login', function() {
   afterEach(function() {
     mock.verify();
     sandbox.restore();
+    tokensLogout();
   });
 
   describe('.linkify', function() {
@@ -67,7 +82,32 @@ describe('Login', function() {
       done();
     });
 
-    it('with non-login link', function(done) {
+    it('removes the tokens before logging out', function(done) {
+      tokensLogin();
+
+      addLink('/logout?a=1');
+
+      mock.expects('prompt').never();
+      mock.expects('setUrl').never();
+
+      login.linkify(fanclub, div);
+
+      var delegate = new Delegate(div);
+      delegate.on('click', 'a', function (event) {
+        event.preventDefault();
+        assert.equal(sessionStorage.getItem('universeAccessToken'), null);
+        assert.equal(sessionStorage.getItem('universeAccessTokenExpiration'), null);
+        assert.equal(sessionStorage.getItem('universeRefreshToken'), null);
+        assert.equal(sessionStorage.getItem('universeRefreshTokenExpiration'), null);
+        done();
+      });
+
+      clickLink();
+    });
+
+    it('with non-login/logout link', function(done) {
+      tokensLogin();
+
       addLink('/something/else');
 
       mock.expects('prompt').never();
@@ -78,6 +118,10 @@ describe('Login', function() {
       var delegate = new Delegate(div);
       delegate.on('click', 'a', function (event) {
         event.preventDefault();
+        assert.equal(sessionStorage.getItem('universeAccessToken'), 'valid_access_token');
+        assert.equal(sessionStorage.getItem('universeAccessTokenExpiration'), '12345');
+        assert.equal(sessionStorage.getItem('universeRefreshToken'), 'valid_refresh_token');
+        assert.equal(sessionStorage.getItem('universeRefreshTokenExpiration'), '54321');
         done();
       });
 

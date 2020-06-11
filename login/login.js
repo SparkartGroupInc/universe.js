@@ -26,6 +26,11 @@ function linkify (fanclub, scope, processor) {
     if (url.match('login')) {
       event.preventDefault();
       module.exports.prompt(fanclub, url, processor);
+    } else if (url.match('logout')) {
+      sessionStorage.removeItem('universeAccessToken');
+      sessionStorage.removeItem('universeAccessTokenExpiration');
+      sessionStorage.removeItem('universeRefreshToken');
+      sessionStorage.removeItem('universeRefreshTokenExpiration');
     }
   });
 };
