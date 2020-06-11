@@ -1,6 +1,11 @@
 <?php
 /**
  * Plugin Name: Universe JS
+ * Plugin URI:  https://github.com/sparkartgroup/universe-js
+ * Description: Javascript modules and PHP functions for interacting with Sparkart's Universe API.
+ * Version:     1.2.6.wordpress-migration
+ * Author:      Sparkart Group, Inc.
+ * Author URI:  http://www.sparkart.com/
  */
 namespace Universe;
 
@@ -45,4 +50,8 @@ function get_tmpl($id) {
     <?php get_template_part("tmpl/$id") ?>
   </template>
   <?php
+}
+
+function get_template($template) {
+  include plugin_dir_path(__FILE__) . $template . '.php';
 }
