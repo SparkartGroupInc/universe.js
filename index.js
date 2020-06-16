@@ -1,5 +1,5 @@
 var API_URLS = {
-  test:       'http://lvh.me:8081/api/v1',
+  test:       'http://localhost:8081/api/v1',
   staging:    'https://staging.services.sparkart.net/api/v1',
   production: 'https://services.sparkart.net/api/v1'
 };
@@ -57,12 +57,11 @@ Universe.prototype.resource = function(endpoint) {
     query: {
       key: this.key
     },
-    with_credentials: true,
     headers: {}
   };
 
-  if (sessionStorage.getItem('universeAccessToken')) {
-    resource.headers.Authorization = 'Bearer ' + sessionStorage.getItem('universeAccessToken');
+  if (localStorage.getItem('universeAccessToken')) {
+    resource.headers.Authorization = 'Bearer ' + localStorage.getItem('universeAccessToken');
   }
 
   return resource;
@@ -88,7 +87,7 @@ var getFanclub = function(callback) {
 };
 
 var getCustomer = function(callback) {
-  if (sessionStorage.getItem('universeAccessToken')) {
+  if (localStorage.getItem('universeAccessToken')) {
     this.get('/account', function(err, data) {
       callback(err, data ? data.customer : null);
     });
@@ -136,38 +135,36 @@ var requestResource = function(method, endpoint, payload, callback) {
 var validateTokens = function(callback) {
   const now = new Date().getTime();
 
-  if (sessionStorage.getItem('universeAccessToken') && now < sessionStorage.getItem('universeAccessTokenExpiration')) {
+  if (localStorage.getItem('universeAccessToken') && now < localStorage.getItem('universeAccessTokenExpiration')) {
     // Valid access token
     return callback();
   } else {
-    sessionStorage.removeItem('universeAccessToken');
-    sessionStorage.removeItem('universeAccessTokenExpiration');
+    localStorage.removeItem('universeAccessToken');
+    localStorage.removeItem('universeAccessTokenExpiration');
   }
 
-  if (!sessionStorage.getItem('universeRefreshToken') || now >= (sessionStorage.getItem('universeRefreshTokenExpiration') || Infinity)) {
+  if (!localStorage.getItem('universeRefreshToken') || now >= (localStorage.getItem('universeRefreshTokenExpiration') || Infinity)) {
     // Missing or expired refresh token
-    sessionStorage.removeItem('universeRefreshToken');
-    sessionStorage.removeItem('universeRefreshTokenExpiration');
+    localStorage.removeItem('universeRefreshToken');
+    localStorage.removeItem('universeRefreshTokenExpiration');
     return callback(true);
   }
 
   // Refresh the access token
-  const options = this.resource('/login/refresh');
-  options.headers['X-Refresh-Token'] = sessionStorage.getItem('universeRefreshToken');
-  const resource = new Resource(options, this.resources_options);
-  resource.post(null, function (err, response) {
+  const resource = new Resource(this.resource('/refresh'), this.resources_options);
+  resource.post({refresh_token: localStorage.getItem('universeRefreshToken')}, function (err, response) {
     if (err) {
-      if (err.status === 401) {
+      if (response && response.data && response.data.status === 'error') {
         // Invalid refresh token
-        sessionStorage.removeItem('universeRefreshToken');
-        sessionStorage.removeItem('universeRefreshTokenExpiration');
+        localStorage.removeItem('universeRefreshToken');
+        localStorage.removeItem('universeRefreshTokenExpiration');
       }
       callback(err);
     } else {
-      sessionStorage.setItem('universeAccessToken', response.data.access_token);
-      sessionStorage.setItem('universeAccessTokenExpiration', response.data.access_token_expires_at);
-      sessionStorage.setItem('universeRefreshToken', response.data.refresh_token);
-      sessionStorage.setItem('universeRefreshTokenExpiration', response.data.refresh_token_expires_at);
+      localStorage.setItem('universeAccessToken', response.data.access.access_token);
+      localStorage.setItem('universeAccessTokenExpiration', response.data.access.access_token_expiration * 1000);
+      localStorage.setItem('universeRefreshToken', response.data.access.refresh_token);
+      localStorage.setItem('universeRefreshTokenExpiration', response.data.access.refresh_token_expiration * 1000);
       callback();
     }
   });

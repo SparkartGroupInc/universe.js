@@ -27,10 +27,10 @@ function linkify (fanclub, scope, processor) {
       event.preventDefault();
       module.exports.prompt(fanclub, url, processor);
     } else if (url.match('logout')) {
-      sessionStorage.removeItem('universeAccessToken');
-      sessionStorage.removeItem('universeAccessTokenExpiration');
-      sessionStorage.removeItem('universeRefreshToken');
-      sessionStorage.removeItem('universeRefreshTokenExpiration');
+      localStorage.removeItem('universeAccessToken');
+      localStorage.removeItem('universeAccessTokenExpiration');
+      localStorage.removeItem('universeRefreshToken');
+      localStorage.removeItem('universeRefreshTokenExpiration');
     }
   });
 };
@@ -68,7 +68,7 @@ function prompt (fanclub, options, processor) {
   // which is the page responsible with storing the returned Universe tokens
   var login = config(fanclub, options, true, processor);
 
-  // Set desired final destination in session storage to preserve through intermediary redirects
+  // Set desired final destination in local storage to preserve through intermediary redirects
   module.exports.setLoginRedirect(login.redirect);
 
   if (util.isMobile) {
@@ -143,7 +143,7 @@ module.exports = {
 
   // Exposed for testing
   setUrl: function(url) {window.location.href = url},
-  setLoginRedirect: function(url) {sessionStorage.setItem('universeLoginRedirect', url)},
+  setLoginRedirect: function(url) {localStorage.setItem('universeLoginRedirect', url)},
   openUrl: function(url, options) {
     // HACK: Required so the referrer is set properly in IE
     var wnd = window.open('', 'universeLogin', qs.stringify(options).replace(/&/g, ','));

@@ -79,7 +79,7 @@ gulp.task('start-test-server', function(callback) {
     .createServer(config.routes)
     .listen(config.port, function() {
       gutil.log('Test server started on', gutil.colors.green(config.host));
-      gutil.log('Run manual tests on', gutil.colors.green(config.host + '/test/browser/test.html'));
+      gutil.log('Run manual tests on', gutil.colors.green(config.testPage));
       callback();
     });
 });

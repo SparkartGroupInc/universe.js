@@ -60,7 +60,7 @@ setups.forEach(function (setup) {
     });
 
     test.it('runs the mocha tests', function() {
-      driver.get(config.host + '/test/browser/test.html');
+      driver.get(config.testPage);
       driver.wait(function() {
         return driver.executeScript('return mocha_finished;').then(function(finished) {
           if (!finished) return false;

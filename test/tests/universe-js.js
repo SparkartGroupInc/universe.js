@@ -6,26 +6,26 @@ var Universe = require('../../index');
 var config = require('../config');
 
 if (require('solidus-client/lib/util').isNode) {
-  global.sessionStorage = {
+  global.localStorage = {
     storage: {},
-    setItem: (k, v) => sessionStorage.storage[k] = v,
-    getItem: k => sessionStorage.storage[k],
-    removeItem: k => delete sessionStorage.storage[k]
+    setItem: (k, v) => localStorage.storage[k] = v,
+    getItem: k => localStorage.storage[k],
+    removeItem: k => delete localStorage.storage[k]
   };
 }
 
 const login = () => {
-  sessionStorage.setItem('universeAccessToken', 'valid_access_token');
-  sessionStorage.setItem('universeAccessTokenExpiration', (new Date().getTime() + 5000).toString());
-  sessionStorage.setItem('universeRefreshToken', 'valid_refresh_token');
-  sessionStorage.setItem('universeRefreshTokenExpiration', (new Date().getTime() + 50000).toString());
+  localStorage.setItem('universeAccessToken', 'valid_access_token');
+  localStorage.setItem('universeAccessTokenExpiration', (new Date().getTime() + 5000).toString());
+  localStorage.setItem('universeRefreshToken', 'valid_refresh_token');
+  localStorage.setItem('universeRefreshTokenExpiration', (new Date().getTime() + 50000).toString());
 };
 
 const logout = () => {
-  sessionStorage.removeItem('universeAccessToken');
-  sessionStorage.removeItem('universeAccessTokenExpiration');
-  sessionStorage.removeItem('universeRefreshToken');
-  sessionStorage.removeItem('universeRefreshTokenExpiration');
+  localStorage.removeItem('universeAccessToken');
+  localStorage.removeItem('universeAccessTokenExpiration');
+  localStorage.removeItem('universeRefreshToken');
+  localStorage.removeItem('universeRefreshTokenExpiration');
 };
 
 module.exports = function() {
@@ -200,60 +200,63 @@ describe('Universe', function() {
     });
 
     it('refreshes an expired access token', function(done) {
-      sessionStorage.setItem('universeAccessTokenExpiration', '1');
+      localStorage.setItem('universeAccessTokenExpiration', '1');
       var universe = new Universe({environment: 'test', key: '12345'});
       universe.get('/account', function(err, data) {
         assert.ifError(err);
         assert.deepEqual(data, {customer: 'me!'});
-        assert.equal(sessionStorage.getItem('universeAccessToken'), 'valid_access_token_2');
-        assert(sessionStorage.getItem('universeAccessTokenExpiration') > new Date().getTime());
-        assert.equal(sessionStorage.getItem('universeRefreshToken'), 'valid_refresh_token_2');
-        assert(sessionStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
+        assert.equal(localStorage.getItem('universeAccessToken'), 'valid_access_token_2');
+        assert(localStorage.getItem('universeAccessTokenExpiration') > new Date().getTime());
+        assert(localStorage.getItem('universeAccessTokenExpiration') < new Date().getTime() + 6000);
+        assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token_2');
+        assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
+        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
         done();
       });
     });
 
     it('clears all tokens when the refresh token is expired', function(done) {
-      sessionStorage.setItem('universeAccessTokenExpiration', '1');
-      sessionStorage.setItem('universeRefreshTokenExpiration', '1');
+      localStorage.setItem('universeAccessTokenExpiration', '1');
+      localStorage.setItem('universeRefreshTokenExpiration', '1');
       var universe = new Universe({environment: 'test', key: '12345'});
       universe.get('/account', function(err, data) {
         assert.ifError(err);
         assert.deepEqual(data, {});
-        assert(!sessionStorage.getItem('universeAccessToken'));
-        assert(!sessionStorage.getItem('universeAccessTokenExpiration'));
-        assert(!sessionStorage.getItem('universeRefreshToken'));
-        assert(!sessionStorage.getItem('universeRefreshTokenExpiration'));
+        assert(!localStorage.getItem('universeAccessToken'));
+        assert(!localStorage.getItem('universeAccessTokenExpiration'));
+        assert(!localStorage.getItem('universeRefreshToken'));
+        assert(!localStorage.getItem('universeRefreshTokenExpiration'));
         done();
       });
     });
 
     it('clears all tokens when the refresh token is invalid', function(done) {
-      sessionStorage.setItem('universeAccessTokenExpiration', '1');
-      sessionStorage.setItem('universeRefreshToken', 'invalid_refresh_token');
+      localStorage.setItem('universeAccessTokenExpiration', '1');
+      localStorage.setItem('universeRefreshToken', 'invalid_refresh_token');
       var universe = new Universe({environment: 'test', key: '12345'});
       universe.get('/account', function(err, data) {
         assert.ifError(err);
         assert.deepEqual(data, {});
-        assert(!sessionStorage.getItem('universeAccessToken'));
-        assert(!sessionStorage.getItem('universeAccessTokenExpiration'));
-        assert(!sessionStorage.getItem('universeRefreshToken'));
-        assert(!sessionStorage.getItem('universeRefreshTokenExpiration'));
+        assert(!localStorage.getItem('universeAccessToken'));
+        assert(!localStorage.getItem('universeAccessTokenExpiration'));
+        assert(!localStorage.getItem('universeRefreshToken'));
+        assert(!localStorage.getItem('universeRefreshTokenExpiration'));
         done();
       });
     });
 
     it('does not clear the refresh token when it cannot be refreshed', function(done) {
-      sessionStorage.setItem('universeAccessTokenExpiration', '1');
-      sessionStorage.setItem('universeRefreshToken', 'oh no');
+      localStorage.setItem('universeAccessTokenExpiration', '1');
+      localStorage.setItem('universeRefreshToken', 'oh no'); // Triggers a 404 from /refresh
       var universe = new Universe({environment: 'test', key: '12345'});
       universe.get('/account', function(err, data) {
         assert.ifError(err);
         assert.deepEqual(data, {});
-        assert(!sessionStorage.getItem('universeAccessToken'));
-        assert(!sessionStorage.getItem('universeAccessTokenExpiration'));
-        assert.equal(sessionStorage.getItem('universeRefreshToken'), 'oh no');
-        assert(sessionStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
+        assert(!localStorage.getItem('universeAccessToken'));
+        assert(!localStorage.getItem('universeAccessTokenExpiration'));
+        assert.equal(localStorage.getItem('universeRefreshToken'), 'oh no');
+        assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
+        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
         done();
       });
     });
@@ -280,7 +283,6 @@ describe('Universe', function() {
       assert.deepEqual(resource, {
         url: config.host + '/api/v1/account',
         query: {key: '12345'},
-        with_credentials: true,
         headers: {
           Authorization: 'Bearer valid_access_token'
         }
@@ -295,7 +297,6 @@ describe('Universe', function() {
       assert.deepEqual(resource, {
         url: config.host + '/api/v1/account',
         query: {key: '12345'},
-        with_credentials: true,
         headers: {}
       });
       done();

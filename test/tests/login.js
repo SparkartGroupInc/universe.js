@@ -19,17 +19,17 @@ describe('Login', function() {
   var mock;
 
   const tokensLogin = () => {
-    sessionStorage.setItem('universeAccessToken', 'valid_access_token');
-    sessionStorage.setItem('universeAccessTokenExpiration', '12345');
-    sessionStorage.setItem('universeRefreshToken', 'valid_refresh_token');
-    sessionStorage.setItem('universeRefreshTokenExpiration', '54321');
+    localStorage.setItem('universeAccessToken', 'valid_access_token');
+    localStorage.setItem('universeAccessTokenExpiration', '12345');
+    localStorage.setItem('universeRefreshToken', 'valid_refresh_token');
+    localStorage.setItem('universeRefreshTokenExpiration', '54321');
   };
 
   const tokensLogout = () => {
-    sessionStorage.removeItem('universeAccessToken');
-    sessionStorage.removeItem('universeAccessTokenExpiration');
-    sessionStorage.removeItem('universeRefreshToken');
-    sessionStorage.removeItem('universeRefreshTokenExpiration');
+    localStorage.removeItem('universeAccessToken');
+    localStorage.removeItem('universeAccessTokenExpiration');
+    localStorage.removeItem('universeRefreshToken');
+    localStorage.removeItem('universeRefreshTokenExpiration');
   };
 
   beforeEach(function() {
@@ -95,10 +95,10 @@ describe('Login', function() {
       var delegate = new Delegate(div);
       delegate.on('click', 'a', function (event) {
         event.preventDefault();
-        assert.equal(sessionStorage.getItem('universeAccessToken'), null);
-        assert.equal(sessionStorage.getItem('universeAccessTokenExpiration'), null);
-        assert.equal(sessionStorage.getItem('universeRefreshToken'), null);
-        assert.equal(sessionStorage.getItem('universeRefreshTokenExpiration'), null);
+        assert.equal(localStorage.getItem('universeAccessToken'), null);
+        assert.equal(localStorage.getItem('universeAccessTokenExpiration'), null);
+        assert.equal(localStorage.getItem('universeRefreshToken'), null);
+        assert.equal(localStorage.getItem('universeRefreshTokenExpiration'), null);
         done();
       });
 
@@ -118,10 +118,10 @@ describe('Login', function() {
       var delegate = new Delegate(div);
       delegate.on('click', 'a', function (event) {
         event.preventDefault();
-        assert.equal(sessionStorage.getItem('universeAccessToken'), 'valid_access_token');
-        assert.equal(sessionStorage.getItem('universeAccessTokenExpiration'), '12345');
-        assert.equal(sessionStorage.getItem('universeRefreshToken'), 'valid_refresh_token');
-        assert.equal(sessionStorage.getItem('universeRefreshTokenExpiration'), '54321');
+        assert.equal(localStorage.getItem('universeAccessToken'), 'valid_access_token');
+        assert.equal(localStorage.getItem('universeAccessTokenExpiration'), '12345');
+        assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token');
+        assert.equal(localStorage.getItem('universeRefreshTokenExpiration'), '54321');
         done();
       });
 
@@ -131,7 +131,7 @@ describe('Login', function() {
 
   describe('.prompt', function() {
     var expectRedirect = function(options) {
-      options.redirect || (options.redirect = config.host + '/');
+      options.redirect || (options.redirect = config.testHost + '/');
       options.popup = 1;
       mock.expects('setLoginRedirect').withArgs(options.redirect).twice();
 
@@ -161,7 +161,7 @@ describe('Login', function() {
     });
 
     it('with relative redirect', function(done) {
-      expectRedirect({redirect: config.host + '/test/browser/redir'});
+      expectRedirect({redirect: config.testHost + '/test/browser/redir'});
 
       login.prompt(fanclub, '/login?redirect=redir');
       login.prompt(fanclub, {redirect: 'redir'});
@@ -169,7 +169,7 @@ describe('Login', function() {
     });
 
     it('with absolute redirect', function(done) {
-      expectRedirect({redirect: config.host + '/redir'});
+      expectRedirect({redirect: config.testHost + '/redir'});
 
       login.prompt(fanclub, '/login?redirect=/redir');
       login.prompt(fanclub, {redirect: '/redir'});
@@ -188,7 +188,7 @@ describe('Login', function() {
       var processor = function(options) {
         assert.equal(options.a, '1');
         assert.equal(options.z, '2');
-        assert.equal(options.redirect, config.host + '/redir');
+        assert.equal(options.redirect, config.testHost + '/redir');
         options.z = 3;
         options.redirect = 'http://somesite.com';
         return options;
