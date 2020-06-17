@@ -118,7 +118,7 @@ var requestResource = function(method, endpoint, payload, callback) {
   const self = this;
 
   validateTokens.call(self, function(err) {
-    const cb = (err, response) => callback(err, response ? response.data : undefined);
+    function cb(err, response) {callback(err, response ? response.data : undefined)};
     const resource = new Resource(self.resource(endpoint), self.resources_options);
     if (method === 'get') {
       resource.get(cb);
