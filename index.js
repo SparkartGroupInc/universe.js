@@ -135,7 +135,7 @@ var requestResource = function(method, endpoint, payload, callback) {
 var validateTokens = function(callback) {
   const now = new Date().getTime();
 
-  if (localStorage.getItem('universeAccessToken') && now < localStorage.getItem('universeAccessTokenExpiration')) {
+  if (localStorage.getItem('universeAccessToken') && now < (localStorage.getItem('universeAccessTokenExpiration') || 0)) {
     // Valid access token
     return callback();
   } else {
@@ -143,7 +143,7 @@ var validateTokens = function(callback) {
     localStorage.removeItem('universeAccessTokenExpiration');
   }
 
-  if (!localStorage.getItem('universeRefreshToken') || now >= (localStorage.getItem('universeRefreshTokenExpiration') || Infinity)) {
+  if (!localStorage.getItem('universeRefreshToken') || now >= (localStorage.getItem('universeRefreshTokenExpiration') || 0)) {
     // Missing or expired refresh token
     localStorage.removeItem('universeRefreshToken');
     localStorage.removeItem('universeRefreshTokenExpiration');

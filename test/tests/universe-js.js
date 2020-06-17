@@ -215,6 +215,38 @@ describe('Universe', function() {
       });
     });
 
+    it('refreshes an access token with missing expiration', function(done) {
+      localStorage.removeItem('universeAccessTokenExpiration');
+      var universe = new Universe({environment: 'test', key: '12345'});
+      universe.get('/account', function(err, data) {
+        assert.ifError(err);
+        assert.deepEqual(data, {customer: 'me!'});
+        assert.equal(localStorage.getItem('universeAccessToken'), 'valid_access_token_2');
+        assert(localStorage.getItem('universeAccessTokenExpiration') > new Date().getTime());
+        assert(localStorage.getItem('universeAccessTokenExpiration') < new Date().getTime() + 6000);
+        assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token_2');
+        assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
+        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
+        done();
+      });
+    });
+
+    it('does not refresh an invalid access token', function(done) {
+      localStorage.setItem('universeAccessToken', 'invalid_access_token');
+      var universe = new Universe({environment: 'test', key: '12345'});
+      universe.get('/account', function(err, data) {
+        assert.ifError(err);
+        assert.deepEqual(data, {});
+        assert.equal(localStorage.getItem('universeAccessToken'), 'invalid_access_token');
+        assert(localStorage.getItem('universeAccessTokenExpiration') > new Date().getTime());
+        assert(localStorage.getItem('universeAccessTokenExpiration') < new Date().getTime() + 6000);
+        assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token');
+        assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
+        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
+        done();
+      });
+    });
+
     it('clears all tokens when the refresh token is expired', function(done) {
       localStorage.setItem('universeAccessTokenExpiration', '1');
       localStorage.setItem('universeRefreshTokenExpiration', '1');
@@ -233,6 +265,21 @@ describe('Universe', function() {
     it('clears all tokens when the refresh token is invalid', function(done) {
       localStorage.setItem('universeAccessTokenExpiration', '1');
       localStorage.setItem('universeRefreshToken', 'invalid_refresh_token');
+      var universe = new Universe({environment: 'test', key: '12345'});
+      universe.get('/account', function(err, data) {
+        assert.ifError(err);
+        assert.deepEqual(data, {});
+        assert(!localStorage.getItem('universeAccessToken'));
+        assert(!localStorage.getItem('universeAccessTokenExpiration'));
+        assert(!localStorage.getItem('universeRefreshToken'));
+        assert(!localStorage.getItem('universeRefreshTokenExpiration'));
+        done();
+      });
+    });
+
+    it('clears all tokens when the refresh token is missing expiration', function(done) {
+      localStorage.setItem('universeAccessTokenExpiration', '1');
+      localStorage.removeItem('universeRefreshTokenExpiration');
       var universe = new Universe({environment: 'test', key: '12345'});
       universe.get('/account', function(err, data) {
         assert.ifError(err);
