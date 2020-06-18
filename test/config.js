@@ -6,6 +6,10 @@ module.exports.port = 8081;
 module.exports.host = 'http://localhost:' + module.exports.port;
 module.exports.testHost = 'http://lvh.me:' + module.exports.port;
 module.exports.testPage = module.exports.testHost + '/test/browser/test.html';
+module.exports.accessTokenExpiration = 15 * 60;
+module.exports.accessTokenExpirationMs = module.exports.accessTokenExpiration * 1000;
+module.exports.refreshTokenExpiration = 24 * 60 * 60;
+module.exports.refreshTokenExpirationMs = module.exports.refreshTokenExpiration * 1000;
 
 module.exports.routes = function (req, res) {
   if (req.url.indexOf('/test/browser/') == 0) {
@@ -23,7 +27,7 @@ module.exports.routes = function (req, res) {
   var success = function(data) {
     res.writeHead(200, {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': module.exports.testHost,
+      'Access-Control-Allow-Origin': req.headers.origin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Credentials': true,
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
@@ -90,9 +94,9 @@ module.exports.routes = function (req, res) {
           status: 'ok',
           access: {
             access_token: 'valid_access_token_2',
-            access_token_expiration: now + 5,
+            access_token_expiration: now + module.exports.accessTokenExpiration,
             refresh_token: 'valid_refresh_token_2',
-            refresh_token_expiration: now + 50
+            refresh_token_expiration: now + module.exports.refreshTokenExpiration
           }
         });
       } else if (body == '{"refresh_token":"oh no"}') {

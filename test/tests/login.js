@@ -18,19 +18,19 @@ describe('Login', function() {
   var sandbox;
   var mock;
 
-  const tokensLogin = () => {
+  function tokensLogin() {
     localStorage.setItem('universeAccessToken', 'valid_access_token');
     localStorage.setItem('universeAccessTokenExpiration', '12345');
     localStorage.setItem('universeRefreshToken', 'valid_refresh_token');
     localStorage.setItem('universeRefreshTokenExpiration', '54321');
-  };
+  }
 
-  const tokensLogout = () => {
+  function tokensLogout() {
     localStorage.removeItem('universeAccessToken');
     localStorage.removeItem('universeAccessTokenExpiration');
     localStorage.removeItem('universeRefreshToken');
     localStorage.removeItem('universeRefreshTokenExpiration');
-  };
+  }
 
   beforeEach(function() {
     sandbox = sinon.sandbox.create();

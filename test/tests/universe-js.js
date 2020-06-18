@@ -8,25 +8,25 @@ var config = require('../config');
 if (require('solidus-client/lib/util').isNode) {
   global.localStorage = {
     storage: {},
-    setItem: (k, v) => localStorage.storage[k] = v,
-    getItem: k => localStorage.storage[k],
-    removeItem: k => delete localStorage.storage[k]
+    setItem: function(k, v) {localStorage.storage[k] = v},
+    getItem: function(k) {return localStorage.storage[k]},
+    removeItem: function(k) {delete localStorage.storage[k]}
   };
 }
 
-const login = () => {
+function login() {
   localStorage.setItem('universeAccessToken', 'valid_access_token');
-  localStorage.setItem('universeAccessTokenExpiration', (new Date().getTime() + 5000).toString());
+  localStorage.setItem('universeAccessTokenExpiration', (new Date().getTime() + config.accessTokenExpirationMs).toString());
   localStorage.setItem('universeRefreshToken', 'valid_refresh_token');
-  localStorage.setItem('universeRefreshTokenExpiration', (new Date().getTime() + 50000).toString());
-};
+  localStorage.setItem('universeRefreshTokenExpiration', (new Date().getTime() + config.refreshTokenExpirationMs).toString());
+}
 
-const logout = () => {
+function logout() {
   localStorage.removeItem('universeAccessToken');
   localStorage.removeItem('universeAccessTokenExpiration');
   localStorage.removeItem('universeRefreshToken');
   localStorage.removeItem('universeRefreshTokenExpiration');
-};
+}
 
 module.exports = function() {
 
@@ -207,10 +207,8 @@ describe('Universe', function() {
         assert.deepEqual(data, {customer: 'me!'});
         assert.equal(localStorage.getItem('universeAccessToken'), 'valid_access_token_2');
         assert(localStorage.getItem('universeAccessTokenExpiration') > new Date().getTime());
-        assert(localStorage.getItem('universeAccessTokenExpiration') < new Date().getTime() + 6000);
         assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token_2');
         assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
-        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
         done();
       });
     });
@@ -223,10 +221,8 @@ describe('Universe', function() {
         assert.deepEqual(data, {customer: 'me!'});
         assert.equal(localStorage.getItem('universeAccessToken'), 'valid_access_token_2');
         assert(localStorage.getItem('universeAccessTokenExpiration') > new Date().getTime());
-        assert(localStorage.getItem('universeAccessTokenExpiration') < new Date().getTime() + 6000);
         assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token_2');
         assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
-        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
         done();
       });
     });
@@ -239,10 +235,8 @@ describe('Universe', function() {
         assert.deepEqual(data, {});
         assert.equal(localStorage.getItem('universeAccessToken'), 'invalid_access_token');
         assert(localStorage.getItem('universeAccessTokenExpiration') > new Date().getTime());
-        assert(localStorage.getItem('universeAccessTokenExpiration') < new Date().getTime() + 6000);
         assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token');
         assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
-        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
         done();
       });
     });
@@ -303,7 +297,6 @@ describe('Universe', function() {
         assert(!localStorage.getItem('universeAccessTokenExpiration'));
         assert.equal(localStorage.getItem('universeRefreshToken'), 'oh no');
         assert(localStorage.getItem('universeRefreshTokenExpiration') > new Date().getTime());
-        assert(localStorage.getItem('universeRefreshTokenExpiration') < new Date().getTime() + 51000);
         done();
       });
     });
