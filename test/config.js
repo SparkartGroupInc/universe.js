@@ -27,7 +27,7 @@ module.exports.routes = function (req, res) {
   var success = function(data) {
     res.writeHead(200, {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': req.headers.origin,
+      'Access-Control-Allow-Origin': req.headers.origin || module.exports.testHost,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Credentials': true,
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',

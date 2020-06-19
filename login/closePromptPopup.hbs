@@ -9,12 +9,16 @@
     // storing the auth tokens, closing the popup and navigating to the final
     // destination.
 
-    localStorage.setItem('universeAccessToken', decodeURIComponent((window.location.search.match(/[\?&]access_token=([^&#$]+)/) || [undefined, ''])[1]));
-    localStorage.setItem('universeAccessTokenExpiration', decodeURIComponent((window.location.search.match(/[\?&]access_token_expiration=([^&#$]+)/) || [undefined, '0'])[1]) * 1000);
-    localStorage.setItem('universeRefreshToken', decodeURIComponent((window.location.search.match(/[\?&]refresh_token=([^&#$]+)/) || [undefined, ''])[1]));
-    localStorage.setItem('universeRefreshTokenExpiration', decodeURIComponent((window.location.search.match(/[\?&]refresh_token_expiration=([^&#$]+)/) || [undefined, '0'])[1]) * 1000);
+    function qsParam(name, defaultValue) {
+      return decodeURIComponent((window.location.search.match(new RegExp('[\\?&]' + name + '=([^&#$]+)')) || [undefined, defaultValue || ''])[1]);
+    };
 
-    const redirect = localStorage.getItem('universeLoginRedirect') || '/';
+    localStorage.setItem('universeAccessToken', qsParam('access_token'));
+    localStorage.setItem('universeAccessTokenExpiration', qsParam('access_token_expiration', '0') * 1000);
+    localStorage.setItem('universeRefreshToken', qsParam('refresh_token'));
+    localStorage.setItem('universeRefreshTokenExpiration', qsParam('refresh_token_expiration', '0') * 1000);
+
+    const redirect = localStorage.getItem('universeLoginRedirect') || qsParam('redirect', '/');
     localStorage.removeItem('universeLoginRedirect');
 
     if (window.opener) {
