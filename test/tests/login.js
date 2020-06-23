@@ -3,7 +3,6 @@ var sinon = require('sinon');
 var qs = require('query-string');
 var Delegate = require('dom-delegate');
 
-var util = require('../../lib/util');
 var login = require('../../login');
 var config = require('../config');
 
@@ -18,6 +17,20 @@ describe('Login', function() {
   var sandbox;
   var mock;
 
+  function tokensLogin() {
+    localStorage.setItem('universeAccessToken', 'valid_access_token');
+    localStorage.setItem('universeAccessTokenExpiration', '12345');
+    localStorage.setItem('universeRefreshToken', 'valid_refresh_token');
+    localStorage.setItem('universeRefreshTokenExpiration', '54321');
+  }
+
+  function tokensLogout() {
+    localStorage.removeItem('universeAccessToken');
+    localStorage.removeItem('universeAccessTokenExpiration');
+    localStorage.removeItem('universeRefreshToken');
+    localStorage.removeItem('universeRefreshTokenExpiration');
+  }
+
   beforeEach(function() {
     sandbox = sinon.sandbox.create();
     mock = sandbox.mock(login);
@@ -26,6 +39,7 @@ describe('Login', function() {
   afterEach(function() {
     mock.verify();
     sandbox.restore();
+    tokensLogout();
   });
 
   describe('.linkify', function() {
@@ -67,7 +81,32 @@ describe('Login', function() {
       done();
     });
 
-    it('with non-login link', function(done) {
+    it('removes the tokens before logging out', function(done) {
+      tokensLogin();
+
+      addLink('/logout?a=1');
+
+      mock.expects('prompt').never();
+      mock.expects('setUrl').never();
+
+      login.linkify(fanclub, div);
+
+      var delegate = new Delegate(div);
+      delegate.on('click', 'a', function (event) {
+        event.preventDefault();
+        assert.equal(localStorage.getItem('universeAccessToken'), null);
+        assert.equal(localStorage.getItem('universeAccessTokenExpiration'), null);
+        assert.equal(localStorage.getItem('universeRefreshToken'), null);
+        assert.equal(localStorage.getItem('universeRefreshTokenExpiration'), null);
+        done();
+      });
+
+      clickLink();
+    });
+
+    it('with non-login/logout link', function(done) {
+      tokensLogin();
+
       addLink('/something/else');
 
       mock.expects('prompt').never();
@@ -78,6 +117,10 @@ describe('Login', function() {
       var delegate = new Delegate(div);
       delegate.on('click', 'a', function (event) {
         event.preventDefault();
+        assert.equal(localStorage.getItem('universeAccessToken'), 'valid_access_token');
+        assert.equal(localStorage.getItem('universeAccessTokenExpiration'), '12345');
+        assert.equal(localStorage.getItem('universeRefreshToken'), 'valid_refresh_token');
+        assert.equal(localStorage.getItem('universeRefreshTokenExpiration'), '54321');
         done();
       });
 
@@ -87,18 +130,12 @@ describe('Login', function() {
 
   describe('.prompt', function() {
     var expectRedirect = function(options) {
-      options.redirect || (options.redirect = config.host + '/');
+      options.redirect || (options.redirect = config.testHost + '/');
+      options.popup = 1;
+      mock.expects('setLoginRedirect').withArgs(options.redirect).twice();
 
-      if (util.isMobile) {
-        mock.expects('setUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
-        mock.expects('setCookie').never();
-        mock.expects('openUrl').never();
-      } else {
-        options.popup = 1;
-        mock.expects('setUrl').never();
-        mock.expects('setCookie').withArgs(options.redirect).twice();
-        mock.expects('openUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
-      }
+      mock.expects('setUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
+      mock.expects('openUrl').never();
     };
 
     it('redirects to Universe login url', function(done) {
@@ -118,7 +155,7 @@ describe('Login', function() {
     });
 
     it('with relative redirect', function(done) {
-      expectRedirect({redirect: config.host + '/test/browser/redir'});
+      expectRedirect({redirect: config.testHost + '/test/browser/redir'});
 
       login.prompt(fanclub, '/login?redirect=redir');
       login.prompt(fanclub, {redirect: 'redir'});
@@ -126,7 +163,7 @@ describe('Login', function() {
     });
 
     it('with absolute redirect', function(done) {
-      expectRedirect({redirect: config.host + '/redir'});
+      expectRedirect({redirect: config.testHost + '/redir'});
 
       login.prompt(fanclub, '/login?redirect=/redir');
       login.prompt(fanclub, {redirect: '/redir'});
@@ -145,7 +182,7 @@ describe('Login', function() {
       var processor = function(options) {
         assert.equal(options.a, '1');
         assert.equal(options.z, '2');
-        assert.equal(options.redirect, config.host + '/redir');
+        assert.equal(options.redirect, config.testHost + '/redir');
         options.z = 3;
         options.redirect = 'http://somesite.com';
         return options;

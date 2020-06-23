@@ -1,8 +1,5 @@
-var cookie = require('cookie');
 var Delegate = require('dom-delegate');
 var qs = require('query-string');
-
-var util = require('../lib/util');
 
 /**
  * Override login links, including those added dynamically
@@ -27,6 +24,11 @@ function linkify (fanclub, scope, processor) {
     if (url.match('login')) {
       event.preventDefault();
       module.exports.prompt(fanclub, url, processor);
+    } else if (url.match('logout')) {
+      localStorage.removeItem('universeAccessToken');
+      localStorage.removeItem('universeAccessTokenExpiration');
+      localStorage.removeItem('universeRefreshToken');
+      localStorage.removeItem('universeRefreshTokenExpiration');
     }
   });
 };
@@ -60,17 +62,14 @@ function prompt (fanclub, options, processor) {
     options = undefined;
   }
 
-  if (util.isMobile) {
-    module.exports.setUrl(config(fanclub, options, false, processor).url);
-  } else {
-    var login = config(fanclub, options, true, processor);
+  // Set the "popup=1" option, to force a redirect to /login/reload,
+  // which is the page responsible with storing the returned Universe tokens
+  var login = config(fanclub, options, true, processor);
 
-    // Set desired final destination in a cookie to preserve through intermediary redirects
-    module.exports.setCookie(login.redirect);
+  // Set desired final destination in local storage to preserve through intermediary redirects
+  module.exports.setLoginRedirect(login.redirect);
 
-    popup(login.url);
-  }
-
+  module.exports.setUrl(login.url);
 };
 
 /**
@@ -138,7 +137,7 @@ module.exports = {
 
   // Exposed for testing
   setUrl: function(url) {window.location.href = url},
-  setCookie: function(url) {document.cookie = cookie.serialize('redirect', url, {path: '/login'})},
+  setLoginRedirect: function(url) {localStorage.setItem('universeLoginRedirect', url)},
   openUrl: function(url, options) {
     // HACK: Required so the referrer is set properly in IE
     var wnd = window.open('', 'universeLogin', qs.stringify(options).replace(/&/g, ','));

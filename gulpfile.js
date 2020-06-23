@@ -6,7 +6,7 @@ var derequire = require('gulp-derequire');
 var rename = require('gulp-rename');
 var runSequence = require('run-sequence');
 var http = require('http');
-var BrowserStackTunnel = require('browserstacktunnel-wrapper');
+var browserstack = require('browserstack-local');
 
 var config = require('./test/config');
 
@@ -23,12 +23,12 @@ gulp.task('build', function() {
 
 gulp.task('test', function(callback) {
   runSequence(
-    ['build-browser-test', 'start-test-server', 'start-browserstack-tunnel'],
+    ['build-browser-test', 'start-test-server', 'start-browserstack-local'],
     'run-node-test',
     'run-browser-test',
     function() {
       runSequence(
-        ['stop-test-server', 'stop-browserstack-tunnel'],
+        ['stop-test-server', 'stop-browserstack-local'],
         callback);
     }
   );
@@ -48,11 +48,11 @@ gulp.task('node-test', function(callback) {
 
 gulp.task('browser-test', function(callback) {
   runSequence(
-    ['build-browser-test', 'start-test-server', 'start-browserstack-tunnel'],
+    ['build-browser-test', 'start-test-server', 'start-browserstack-local'],
     'run-browser-test',
     function() {
       runSequence(
-        ['stop-test-server', 'stop-browserstack-tunnel'],
+        ['stop-test-server', 'stop-browserstack-local'],
         callback);
     }
   );
@@ -66,9 +66,22 @@ gulp.task('test-server', function(callback) {
 
 // TASKS
 
-gulp.task('build-browser-test', function() {
+gulp.task('build-browser-test', function(callback) {
+  runSequence(
+    ['build-browser-unit-test', 'build-browser-functional-test'],
+    callback);
+});
+
+gulp.task('build-browser-unit-test', function() {
   return gulp
     .src('./test/test.js')
+    .pipe(browserify())
+    .pipe(gulp.dest('./test/browser'));
+});
+
+gulp.task('build-browser-functional-test', function() {
+  return gulp
+    .src('./test/tests/functional.js')
     .pipe(browserify())
     .pipe(gulp.dest('./test/browser'));
 });
@@ -79,7 +92,8 @@ gulp.task('start-test-server', function(callback) {
     .createServer(config.routes)
     .listen(config.port, function() {
       gutil.log('Test server started on', gutil.colors.green(config.host));
-      gutil.log('Run manual tests on', gutil.colors.green(config.host + '/test/browser/test.html'));
+      gutil.log('Run unit tests on', gutil.colors.green(config.testPage));
+      gutil.log('Run functional tests on', gutil.colors.green(config.functionalTestPage));
       callback();
     });
 });
@@ -88,21 +102,18 @@ gulp.task('stop-test-server', function(callback) {
   test_server.close(callback);
 });
 
-var browserstack_tunnel;
-gulp.task('start-browserstack-tunnel', function(callback) {
-  browserstack_tunnel = new BrowserStackTunnel({
-    key: 'TODO',
-    v: true
-  });
-
-  browserstack_tunnel.start(function(err) {
-    if (!err) gutil.log('BrowserStack tunnel started');
+var bs_local;
+gulp.task('start-browserstack-local', function(callback) {
+  bs_local = new browserstack.Local();
+  var bs_local_args = {'key': 'TODO', force: true, verbose: true};
+  bs_local.start(bs_local_args, function(err) {
+    if (!err) gutil.log('Started BrowserStackLocal');
     callback(err);
   });
 });
 
-gulp.task('stop-browserstack-tunnel', function(callback) {
-  browserstack_tunnel.stop(callback);
+gulp.task('stop-browserstack-local', function(callback) {
+  bs_local.stop(callback);
 });
 
 gulp.task('run-node-test', function(callback) {
