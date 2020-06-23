@@ -1,8 +1,6 @@
 var Delegate = require('dom-delegate');
 var qs = require('query-string');
 
-var util = require('../lib/util');
-
 /**
  * Override login links, including those added dynamically
  * @param {object} fanclub - universe /api/v1/fanclub data
@@ -64,18 +62,14 @@ function prompt (fanclub, options, processor) {
     options = undefined;
   }
 
-  // Set the "popup=1" option even for mobile, to force a redirect to /login/reload,
+  // Set the "popup=1" option, to force a redirect to /login/reload,
   // which is the page responsible with storing the returned Universe tokens
   var login = config(fanclub, options, true, processor);
 
   // Set desired final destination in local storage to preserve through intermediary redirects
   module.exports.setLoginRedirect(login.redirect);
 
-  if (util.isMobile) {
-    module.exports.setUrl(login.url);
-  } else {
-    popup(login.url);
-  }
+  module.exports.setUrl(login.url);
 };
 
 /**

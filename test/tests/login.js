@@ -3,7 +3,6 @@ var sinon = require('sinon');
 var qs = require('query-string');
 var Delegate = require('dom-delegate');
 
-var util = require('../../lib/util');
 var login = require('../../login');
 var config = require('../config');
 
@@ -135,13 +134,8 @@ describe('Login', function() {
       options.popup = 1;
       mock.expects('setLoginRedirect').withArgs(options.redirect).twice();
 
-      if (util.isMobile) {
-        mock.expects('setUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
-        mock.expects('openUrl').never();
-      } else {
-        mock.expects('setUrl').never();
-        mock.expects('openUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
-      }
+      mock.expects('setUrl').withArgs(fanclub.links.login + '?' + qs.stringify(options)).twice();
+      mock.expects('openUrl').never();
     };
 
     it('redirects to Universe login url', function(done) {

@@ -14,8 +14,9 @@ var browserStackConfig = {
 var setups = [
   // https://caniuse.com/usage-table
   {browserName: 'IE', browser_version: '11.0'}, // TODO: localStorage seems very unreliable on IE
+  {browserName: 'Edge', browser_version: '83.0'},
+  {browserName: 'Edge', browser_version: '81.0'},
   {browserName: 'Edge', browser_version: '18.0'},
-  {browserName: 'Edge', browser_version: '17.0'},
   {browserName: 'Firefox', browser_version: '76.0'},
   {browserName: 'Firefox', browser_version: '75.0'},
   {browserName: 'Chrome', browser_version: '83'},
@@ -61,7 +62,15 @@ setups.forEach(function (setup) {
       driver.quit();
     });
 
-    it('runs the mocha tests', async done => {
+    async function waitFor(statement) {
+      while (true) {
+        const value = await driver.executeScript(statement);
+        if (value) return value;
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    }
+
+    it('runs the unit tests', async done => {
       let err;
       await driver.get(config.testPage);
       await driver.wait(async () => {
@@ -86,6 +95,37 @@ setups.forEach(function (setup) {
         return true;
       });
       done(err);
+    });
+
+    it('runs the functional tests', async done => {
+      let universeStatus;
+
+      // Load the page, wait for the button to be added
+      await driver.get(config.functionalTestPage);
+      universeStatus = await waitFor('return window.universeStatus');
+      if (universeStatus !== 'logged out') return done(new Error('Expected universeStatus to be "logged out", got: ' + universeStatus));
+
+      // Log in
+      await driver.executeScript('window.universeStatus = null');
+      await driver.findElement(webdriver.By.id('universeButton')).click();
+      universeStatus = await waitFor('return window.universeStatus');
+      if (universeStatus !== 'logged in') return done(new Error('Expected universeStatus to be "logged in", got: ' + universeStatus));
+
+      // Navigate to another page and come back
+      await driver.executeScript('window.universeStatus = null');
+      await driver.get('https://www.sparkart.com/');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await driver.get(config.functionalTestPage);
+      universeStatus = await waitFor('return window.universeStatus');
+      if (universeStatus !== 'logged in') return done(new Error('Expected universeStatus to be "logged in", got: ' + universeStatus));
+
+      // Log out
+      await driver.executeScript('window.universeStatus = null');
+      await driver.findElement(webdriver.By.id('universeButton')).click();
+      universeStatus = await waitFor('return window.universeStatus');
+      if (universeStatus !== 'logged out') return done(new Error('Expected universeStatus to be "logged out", got: ' + universeStatus));
+
+      done();
     });
   });
 });

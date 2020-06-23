@@ -66,9 +66,22 @@ gulp.task('test-server', function(callback) {
 
 // TASKS
 
-gulp.task('build-browser-test', function() {
+gulp.task('build-browser-test', function(callback) {
+  runSequence(
+    ['build-browser-unit-test', 'build-browser-functional-test'],
+    callback);
+});
+
+gulp.task('build-browser-unit-test', function() {
   return gulp
     .src('./test/test.js')
+    .pipe(browserify())
+    .pipe(gulp.dest('./test/browser'));
+});
+
+gulp.task('build-browser-functional-test', function() {
+  return gulp
+    .src('./test/tests/functional.js')
     .pipe(browserify())
     .pipe(gulp.dest('./test/browser'));
 });
@@ -79,7 +92,8 @@ gulp.task('start-test-server', function(callback) {
     .createServer(config.routes)
     .listen(config.port, function() {
       gutil.log('Test server started on', gutil.colors.green(config.host));
-      gutil.log('Run manual tests on', gutil.colors.green(config.testPage));
+      gutil.log('Run unit tests on', gutil.colors.green(config.testPage));
+      gutil.log('Run functional tests on', gutil.colors.green(config.functionalTestPage));
       callback();
     });
 });

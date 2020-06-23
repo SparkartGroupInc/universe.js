@@ -1,5 +1,5 @@
 var API_URLS = {
-  test:       'http://localhost:8081/api/v1',
+  test:       'http://universe-js.test:8081/api/v1',
   staging:    'https://staging.services.sparkart.net/api/v1',
   production: 'https://services.sparkart.net/api/v1'
 };
