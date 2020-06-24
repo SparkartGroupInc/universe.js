@@ -21,12 +21,7 @@
     const redirect = localStorage.getItem('universeLoginRedirect') || qsParam('redirect', '/');
     localStorage.removeItem('universeLoginRedirect');
 
-    if (window.opener) {
-      window.opener.location.href = redirect;
-      window.close();
-    } else {
-      window.location.href = redirect;
-    }
+    window.location.href = redirect;
 
   </script>
 
