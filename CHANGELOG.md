@@ -1,3 +1,7 @@
+## 2.0.1 (Jun 24, 2020)
+
+ - Do not close the window after logging in, even if there's a parent window (there's no popup anymore) [[48c2351](https://github.com/sparkartgroup/universe-js/commit/48c23511c72abc502e99d0ffd43e9236b43ee018)]
+
 ## 2.0.0 (Jun 23, 2020)
 
  - JWT [[4d3db83](https://github.com/sparkartgroup/universe-js/commit/4d3db83e7b29db89484a8124ffdfc117a51e57ba)]
