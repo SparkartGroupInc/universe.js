@@ -3,7 +3,7 @@
  * Plugin Name: Universe JS
  * Plugin URI:  https://github.com/sparkartgroup/universe-js
  * Description: Javascript modules and PHP functions for interacting with Sparkart's Universe API.
- * Version:     1.2.6.wordpress-migration
+ * Version:     2.0.1.wordpress-migration
  * Author:      Sparkart Group, Inc.
  * Author URI:  http://www.sparkart.com/
  */
