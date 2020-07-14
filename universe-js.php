@@ -28,5 +28,5 @@ function fetch_resource($endpoint, $universe_api_key = null) {
 }
 
 function get_template($template) {
-  include plugin_dir_path(__FILE__) . $template . '.php';
+  load_template(plugin_dir_path(__FILE__) . $template . '.php', false);
 }
