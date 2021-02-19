@@ -1,3 +1,7 @@
+## 2.1.0 (Feb 19, 2021)
+
+ - Logout template [[6e4fc6b](https://github.com/sparkartgroup/universe-js/commit/6e4fc6b6c9023c58d64af262429a9c4be6f8386b)]
+
 ## 2.0.1 (Jun 24, 2020)
 
  - Do not close the window after logging in, even if there's a parent window (there's no popup anymore) [[48c2351](https://github.com/sparkartgroup/universe-js/commit/48c23511c72abc502e99d0ffd43e9236b43ee018)]
