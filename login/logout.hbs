@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+
+  <script>
+
+    // Clear the auth tokens and redirect to Universe so it can clear its session
+
+    localStorage.removeItem('universeAccessToken');
+    localStorage.removeItem('universeAccessTokenExpiration');
+    localStorage.removeItem('universeRefreshToken');
+    localStorage.removeItem('universeRefreshTokenExpiration');
+
+    window.location.href = '{{{ fanclub.links.logout }}}';
+
+  </script>
+
+</body>
+</html>
