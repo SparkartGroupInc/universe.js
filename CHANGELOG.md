@@ -1,3 +1,7 @@
+## 2.1.1 (Feb 20, 2021)
+
+ - Remove the referrer path when logging out, to prevent a redirect loop [[122eeb9](https://github.com/sparkartgroup/universe-js/commit/122eeb9decfc9d419ea18e72a105be624e73352b)]
+
 ## 2.1.0 (Feb 19, 2021)
 
  - Logout template [[6e4fc6b](https://github.com/sparkartgroup/universe-js/commit/6e4fc6b6c9023c58d64af262429a9c4be6f8386b)]
