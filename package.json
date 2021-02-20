@@ -36,7 +36,7 @@
     "gulp-mocha": "~1.1.1",
     "gulp-rename": "~1.2.0",
     "gulp-util": "~3.0.1",
-    "handlebars": "~2.0.0",
+    "handlebars": "~4.7.6",
     "nock": "~0.48.0",
     "run-sequence": "~1.0.1",
     "selenium-webdriver": "^4.0.0-alpha.7",
