@@ -3,19 +3,19 @@
  * Plugin Name: Universe JS
  * Plugin URI:  https://github.com/sparkartgroup/universe-js
  * Description: Javascript modules and PHP functions for interacting with Sparkart's Universe API.
- * Version:     2.1.1.wordpress-migration
+ * Version:     2.1.2.wordpress-migration
  * Author:      Sparkart Group, Inc.
  * Author URI:  http://www.sparkart.com/
  */
 namespace Universe;
 
 function fetch_resource($endpoint, $universe_api_key = null) {
-  if (!$universe_api_key && $GLOBALS['solidus_context']) $universe_api_key = $GLOBALS['solidus_context']['site']['integrations']['universe_apikey'];
+  if (!$universe_api_key && array_key_exists('solidus_context', $GLOBALS)) $universe_api_key = $GLOBALS['solidus_context']['site']['integrations']['universe_apikey'];
   if (!$universe_api_key) throw new \Exception('Missing Universe API key');
 
   $url = "https://services.sparkart.net/api/v1/$endpoint" . (strpos($endpoint, '?') === false ? '?key=' : '&key=') . $universe_api_key;
 
-  if ($GLOBALS['solidus_context']) {
+  if (array_key_exists('solidus_context', $GLOBALS)) {
     // Replace dynamic path segments ({tag}, {topic})
     $url = preg_replace_callback('/\{(.+?)\}/', function ($match) {return $GLOBALS['solidus_context']['parameters'][$match[1]];}, $url);
   }
