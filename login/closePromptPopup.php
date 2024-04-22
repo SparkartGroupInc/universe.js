@@ -4,24 +4,45 @@
 
   <script>
 
-    // After a successful login in the popup the parent window is redirected by
-    // Universe to /login/reload (hardcoded path). This page is responsible for
-    // storing the auth tokens, closing the popup and navigating to the final
-    // destination.
+    const API_HOST = '<?= fw_get_db_settings_option('universe_base') ?>';
+    const API_KEY = '<?= fw_get_db_settings_option('universe_key') ?>';
+
+    // Get the refresh token from the query string. If present, use it to
+    // immediately get an access token
+    const refreshToken = qsParam('refresh_token');
+    if (refreshToken) {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', API_HOST + '/api/v1/refresh?key=' + API_KEY);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          // Request is complete; if it was successful, save the access token
+          if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.status === 'ok') {
+              localStorage.setItem('universeAccessToken', data.access.access_token);
+              localStorage.setItem('universeAccessTokenExpiration', data.access.access_token_expiration * 1000);
+              localStorage.setItem('universeRefreshToken', data.access.refresh_token);
+              localStorage.setItem('universeRefreshTokenExpiration', data.access.refresh_token_expiration * 1000);
+            }
+          }
+          redirect();
+        }
+      };
+      xhr.send(JSON.stringify({refresh_token: refreshToken}));
+    } else {
+      redirect();
+    }
 
     function qsParam(name, defaultValue) {
       return decodeURIComponent((window.location.search.match(new RegExp('[\\?&]' + name + '=([^&#$]+)')) || [undefined, defaultValue || ''])[1]);
     };
 
-    localStorage.setItem('universeAccessToken', qsParam('access_token'));
-    localStorage.setItem('universeAccessTokenExpiration', qsParam('access_token_expiration', '0') * 1000);
-    localStorage.setItem('universeRefreshToken', qsParam('refresh_token'));
-    localStorage.setItem('universeRefreshTokenExpiration', qsParam('refresh_token_expiration', '0') * 1000);
-
-    const redirect = localStorage.getItem('universeLoginRedirect') || qsParam('redirect', '/');
-    localStorage.removeItem('universeLoginRedirect');
-
-    window.location.href = redirect;
+    function redirect() {
+      const redirect = localStorage.getItem('universeLoginRedirect') || qsParam('redirect', '/');
+      localStorage.removeItem('universeLoginRedirect');
+      window.location.href = redirect;
+    }
 
   </script>
 
