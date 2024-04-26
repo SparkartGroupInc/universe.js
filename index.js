@@ -1,11 +1,14 @@
 var API_URLS = {
-  test:       'http://universe-js.test:8081/api/v1',
-  staging:    'https://staging.services.sparkart.net/api/v1',
-  production: 'https://services.sparkart.net/api/v1'
+  test:        'http://universe-js.test:8081/api/v1',
+  development: 'https://dev.services.sparkart.net:11443/api/v1',
+  staging:     'https://staging.services.sparkart.net/api/v1',
+  production:  'https://services.sparkart.net/api/v1'
 };
 
 var SolidusClient = require('solidus-client');
 var Resource = require('solidus-client/lib/resource');
+var loadComments = require('./lib/disqus');
+var linkify = require('./login/login').linkify;
 
 var Universe = function(options) {
   if (!(this instanceof Universe)) return new Universe(options);
@@ -13,8 +16,14 @@ var Universe = function(options) {
   SolidusClient.call(this, options);
 
   options || (options = {});
-  this.environment = options.environment || 'production';
-  this.key         = options.key;
+  if (options.environment) {
+    this.apiUrl = API_URLS[options.environment];
+    this.useJWT = true;
+  } else {
+    this.apiUrl = options.apiUrl;
+    this.useJWT = options.useJWT;
+  }
+  this.key = options.key;
 };
 
 Universe.prototype = Object.create(SolidusClient.prototype);
@@ -57,10 +66,11 @@ Universe.prototype.resource = function(endpoint) {
     query: {
       key: this.key
     },
-    headers: {}
+    headers: {},
+    with_credentials: !this.useJWT
   };
 
-  if (localStorage.getItem('universeAccessToken')) {
+  if (this.useJWT && localStorage.getItem('universeAccessToken')) {
     resource.headers.Authorization = 'Bearer ' + localStorage.getItem('universeAccessToken');
   }
 
@@ -73,6 +83,14 @@ Universe.prototype.jsonpResource = function(endpoint) {
     jsonp: true
   };
 };
+
+Universe.prototype.loadComments = function(shortname) {
+  loadComments(shortname, this);
+}
+
+Universe.prototype.linkify = function(scope, processor) {
+  linkify(this.fanclub, scope, processor, this.useJWT);
+}
 
 // PRIVATE
 
@@ -87,7 +105,7 @@ var getFanclub = function(callback) {
 };
 
 var getCustomer = function(callback) {
-  if (localStorage.getItem('universeAccessToken')) {
+  if (!this.useJWT || localStorage.getItem('universeAccessToken')) {
     this.get('/account', function(err, data) {
       callback(err, data ? data.customer : null);
     });
@@ -111,7 +129,7 @@ var expandResourcesEndpoints = function(view) {
 };
 
 var resourceUrl = function(endpoint) {
-  return (API_URLS[this.environment] || API_URLS['production']) + endpoint;
+  return this.apiUrl + endpoint;
 };
 
 var requestResource = function(method, endpoint, payload, callback) {
@@ -133,6 +151,8 @@ var requestResource = function(method, endpoint, payload, callback) {
 }
 
 var validateTokens = function(callback) {
+  if (!this.useJWT) return callback();
+
   const now = new Date().getTime();
 
   if (localStorage.getItem('universeAccessToken') && now < (localStorage.getItem('universeAccessTokenExpiration') || 0)) {
