@@ -96,16 +96,16 @@ Requires a Unyson Sparkart theme, which holds the API settings as Unyson options
  - `Universe\get('/some-endpoint')`: Fetch a resource from Universe.
  - `Universe\fanclub()`: Fetches and caches the fanclub. The cache is refreshed after 5 minutes.
  - `Universe\plans()`: Fetches and caches the plans. The cache is refreshed after 5 minutes.
- - `Universe\forum_url(options)`
- - `Universe\ipboard_url(options)`
- - `Universe\login_url(options)`
- - `Universe\logout_url(options)`
- - `Universe\password_reset_url(options)`
- - `Universe\redeem_url(options)`
- - `Universe\saved_card_url(options)`
- - `Universe\legals_privacy_url(options)`
- - `Universe\legals_privacy_california_url(options)`
- - `Universe\legals_terms_url(options)`
+ - `Universe\forum_url(options = [])`
+ - `Universe\ipboard_url(options = [])`
+ - `Universe\login_url(options = [])`
+ - `Universe\logout_url(options = [])`
+ - `Universe\password_reset_url(options = [])`
+ - `Universe\redeem_url(options = [])`
+ - `Universe\saved_card_url(options = [])`
+ - `Universe\legals_privacy_url(options = [])`
+ - `Universe\legals_privacy_california_url(options = [])`
+ - `Universe\legals_terms_url(options = [])`
  - `Universe\checkout_url(options)`: Requires the `'plan' => 'Some Plan'` option.
  - `Universe\upgrade_url(options)`: Requires the `'plan' => 'Some Plan'` option.
 
