@@ -8,11 +8,12 @@ var qs = require('query-string');
  * @param {function} processor - Login options (for the query string) processor
  */
 
-function linkify (fanclub, scope, processor) {
+function linkify (fanclub, scope, processor, popup) {
   if (!processor && typeof(scope) === 'function') {
     processor = scope;
     scope = undefined;
   }
+  if (popup === undefined) popup = true;
 
   var delegate = new Delegate(scope || document.body);
 
@@ -23,7 +24,7 @@ function linkify (fanclub, scope, processor) {
 
     if (url.match('login')) {
       event.preventDefault();
-      module.exports.prompt(fanclub, url, processor);
+      module.exports.prompt(fanclub, url, processor, popup);
     } else if (url.match('logout')) {
       localStorage.removeItem('universeAccessToken');
       localStorage.removeItem('universeAccessTokenExpiration');
@@ -56,7 +57,7 @@ function findClosestTag(element, tag) {
  * @param {function} processor - Login options (for the query string) processor
  */
 
-function prompt (fanclub, options, processor) {
+function prompt (fanclub, options, processor, popup) {
   if (!processor && typeof(options) === 'function') {
     processor = options;
     options = undefined;
@@ -64,7 +65,7 @@ function prompt (fanclub, options, processor) {
 
   // Set the "popup=1" option, to force a redirect to /login/reload,
   // which is the page responsible with storing the returned Universe tokens
-  var login = config(fanclub, options, true, processor);
+  var login = config(fanclub, options, popup, processor);
 
   // Set desired final destination in local storage to preserve through intermediary redirects
   module.exports.setLoginRedirect(login.redirect);
