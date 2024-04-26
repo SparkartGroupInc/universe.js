@@ -3,7 +3,7 @@
  * Plugin Name: Universe JS
  * Plugin URI:  https://github.com/sparkartgroup/universe-js
  * Description: Javascript modules and PHP functions for interacting with Sparkart's Universe API.
- * Version:     2.2.0.wordpress-migration
+ * Version:     2.3.0.wordpress-migration
  * Author:      Sparkart Group, Inc.
  * Author URI:  http://www.sparkart.com/
  */
@@ -95,52 +95,52 @@ function wp_head() {
 }
 
 add_shortcode('universe_forum_url', 'Universe\forum_url');
-function forum_url($atts, $content = '', $shortcode_tag = '') {
+function forum_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->forum, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_ipboard_url', 'Universe\ipboard_url');
-function ipboard_url($atts, $content = '', $shortcode_tag = '') {
+function ipboard_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->ipboard, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_login_url', 'Universe\login_url');
-function login_url($atts, $content = '', $shortcode_tag = '') {
+function login_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->login, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_logout_url', 'Universe\logout_url');
-function logout_url($atts, $content = '', $shortcode_tag = '') {
+function logout_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->logout, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_password_reset_url', 'Universe\password_reset_url');
-function password_reset_url($atts, $content = '', $shortcode_tag = '') {
+function password_reset_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->password_reset, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_redeem_url', 'Universe\redeem_url');
-function redeem_url($atts, $content = '', $shortcode_tag = '') {
+function redeem_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->redeem, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_saved_card_url', 'Universe\saved_card_url');
-function saved_card_url($atts, $content = '', $shortcode_tag = '') {
+function saved_card_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->saved_card, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_legals_privacy_url', 'Universe\legals_privacy_url');
-function legals_privacy_url($atts, $content = '', $shortcode_tag = '') {
+function legals_privacy_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->legals->privacy, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_legals_privacy_california_url', 'Universe\legals_privacy_california_url');
-function legals_privacy_california_url($atts, $content = '', $shortcode_tag = '') {
+function legals_privacy_california_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->legals->{'privacy-california'}, $atts, $content, $shortcode_tag);
 }
 
 add_shortcode('universe_legals_terms_url', 'Universe\legals_terms_url');
-function legals_terms_url($atts, $content = '', $shortcode_tag = '') {
+function legals_terms_url($atts = [], $content = '', $shortcode_tag = '') {
   return prepare_shortcode_url(fanclub()->links->legals->terms, $atts, $content, $shortcode_tag);
 }
 
