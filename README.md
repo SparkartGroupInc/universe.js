@@ -159,5 +159,5 @@ Quick commands to build the plugin:
 docker run --rm -v "$PWD":/app -w /app node:11.14 /bin/bash -c "npm install && npm run build"
 
 # Package the plugin in the universe-js.zip file
-(rm universe-js.zip || true) && zip -r -q universe-js.zip . -x '*.DS_Store' -x '.git/*' -x 'node_modules/*'
+(rm universe-js.zip || true) && zip -r -q universe-js.zip . -x '*.DS_Store' -x '.git/*' -x 'node_modules/*' -x 'test/*'
 ```
