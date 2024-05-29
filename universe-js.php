@@ -3,7 +3,7 @@
  * Plugin Name: Universe JS
  * Plugin URI:  https://github.com/sparkartgroup/universe-js
  * Description: Javascript modules and PHP functions for interacting with Sparkart's Universe API.
- * Version:     3.0.0
+ * Version:     3.0.1
  * Author:      Sparkart Group, Inc.
  * Author URI:  http://www.sparkart.com/
  */
@@ -12,6 +12,10 @@ namespace Universe;
 const CACHE_VERSION = 'v1';
 const CACHE_EXPIRATION = 24 * 60 * 60;
 const CACHE_FRESHNESS = 5 * 60;
+const CACHE_KEYS = [
+  'fanclub' => CACHE_VERSION . '_universe_fanclub',
+  'plans'   => CACHE_VERSION . '_universe_plans'
+];
 
 class APIException extends \Exception{}
 
@@ -35,14 +39,14 @@ function get($endpoint) {
 
 // Get and cache the fanclub
 function fanclub() {
-  return memoize('universe_fanclub', function() {
+  return memoize(CACHE_KEYS['fanclub'], function() {
     return get('fanclub')->fanclub;
   });
 }
 
 // Get and cache the plans, as an array keyed by name
 function plans() {
-  return memoize('universe_plans', function() {
+  return memoize(CACHE_KEYS['plans'], function() {
     return array_reduce(get('plans')->plans, function($plans, $plan) {
       $plans[$plan->name] = $plan;
       return $plans;
@@ -53,14 +57,13 @@ function plans() {
 // Cache the $fn result for CACHE_EXPIRATION seconds, but refresh it after CACHE_FRESHNESS seconds
 function memoize($transient, $fn) {
   // Get the cached value
-  $name = CACHE_VERSION . '_' . $transient;
-  $data = get_transient($name);
+  $data = get_transient($transient);
 
   if ($data === false || (time() - $data['cached_at']) > CACHE_FRESHNESS) {
     // The value doesn't exist or is stale, cache a fresh value
     try {
       $data = array('cached_at' => time(), 'value' => $fn());
-      set_transient($name, $data, CACHE_EXPIRATION);
+      set_transient($transient, $data, CACHE_EXPIRATION);
     } catch (APIException $e) {
       // There's a problem with Universe, use the stale value if possible
       if ($data === false) throw $e;
@@ -68,6 +71,14 @@ function memoize($transient, $fn) {
   }
 
   return $data['value'];
+}
+
+// Clear the cached values when options change
+add_action('fw_settings_options_update', 'Universe\clear_cache');
+function clear_cache($data) {
+  foreach (array_values(CACHE_KEYS) as &$transient) {
+    delete_transient($transient);
+  }
 }
 
 add_action('wp_enqueue_scripts', 'Universe\wp_enqueue_scripts');
