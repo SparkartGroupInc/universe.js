@@ -4,6 +4,8 @@ var url  = require('url');
 // Server runs on universe-js.test and test page runs on lvh.me, to test cross-domain requests
 module.exports.port = 8081;
 module.exports.host = 'http://universe-js.test:' + module.exports.port;
+module.exports.sameSiteUrlLoggedIn = 'http://i.universe.lvh.me:' + module.exports.port + '/api/v1';
+module.exports.sameSiteUrlLoggedOut = 'http://o.universe.lvh.me:' + module.exports.port + '/api/v1';
 module.exports.testHost = 'http://lvh.me:' + module.exports.port;
 module.exports.testPage = module.exports.testHost + '/test/browser/test.html';
 module.exports.functionalTestPage = module.exports.testHost + '/test/browser/functional.html';
@@ -55,7 +57,7 @@ module.exports.routes = function (req, res) {
     res.end(JSON.stringify({error: 'Not Found: ' + req.url}));
   };
 
-  var logged_in = req.headers.authorization && req.headers.authorization.match(/^Bearer valid_access_token(_\d+)?$/);
+  var logged_in = (req.headers.authorization && req.headers.authorization.match(/^Bearer valid_access_token(_\d+)?$/)) || (module.exports.sameSiteUrlLoggedIn.indexOf(req.headers.host) > -1);
 
   if (req.method === 'OPTIONS') return success();
 

@@ -72,11 +72,12 @@ describe('Login', function() {
     it('replaces login link with prompt', function(done) {
       addLink('/login?a=1');
       var processor = function() {};
+      var popup = false;
 
-      mock.expects('prompt').withArgs(fanclub, '/login?a=1', processor);
+      mock.expects('prompt').withArgs(fanclub, '/login?a=1', processor, popup);
       mock.expects('setUrl').never();
 
-      login.linkify(fanclub, div, processor);
+      login.linkify(fanclub, div, processor, popup);
       clickLink();
       done();
     });

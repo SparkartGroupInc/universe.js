@@ -62,6 +62,7 @@ function prompt (fanclub, options, processor, popup) {
     processor = options;
     options = undefined;
   }
+  if (popup === undefined) popup = true;
 
   // Set the "popup=1" option, to force a redirect to /login/reload,
   // which is the page responsible with storing the returned Universe tokens
