@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
     <meta name="referrer" content="origin">
-    <script src="<?php echo get_template_directory_uri(); ?>/js/sparkart-universe-bundle.js"></script>
 </head>
 <body>
 
-<a id="redirect" referrerpolicy="origin" style="display:none"></a>
+<a id="redirect" referrerpolicy="origin" style="display:none" href="<?= Universe\logout_url() ?>"></a>
 <script>
 
     // Clear the auth tokens and redirect to Universe so it can clear its session
@@ -16,6 +15,8 @@
     localStorage.removeItem('universeAccessTokenExpiration');
     localStorage.removeItem('universeRefreshToken');
     localStorage.removeItem('universeRefreshTokenExpiration');
+
+    document.getElementById('redirect').click();
 
 </script>
 </body>
