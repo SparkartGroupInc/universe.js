@@ -61,6 +61,8 @@ module.exports.routes = function (req, res) {
 
   if (req.method === 'OPTIONS') return success();
 
+  req.url = req.url.replace(/^\/api\/v1\/account\?t=\d+&key=12345$/, '/api/v1/account?t=54321&key=12345');
+
   switch ((req.method + ' ' + req.url)
     .replace(/solidus_client_jsonp_callback_\d+/, 'solidus_client_jsonp_callback')
     .replace(/redirect=[^&#$]+/, 'redirect=')) {
@@ -82,6 +84,10 @@ module.exports.routes = function (req, res) {
   case 'GET /api/v1/account?key=12345':
   case 'GET /api/v1/account?key=12345&callback=solidus_client_jsonp_callback':
     success(logged_in ? {customer: 'me!'} : {});
+    break;
+
+  case 'GET /api/v1/account?t=54321&key=12345':
+    success(logged_in ? {customer: 'me! not cached'} : {});
     break;
 
   case 'POST /api/v1/account?key=12345':

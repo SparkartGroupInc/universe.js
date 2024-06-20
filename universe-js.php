@@ -3,7 +3,7 @@
  * Plugin Name: Universe JS
  * Plugin URI:  https://github.com/sparkartgroup/universe-js
  * Description: Javascript modules and PHP functions for interacting with Sparkart's Universe API.
- * Version:     3.0.2
+ * Version:     3.0.3
  * Author:      Sparkart Group, Inc.
  * Author URI:  http://www.sparkart.com/
  */

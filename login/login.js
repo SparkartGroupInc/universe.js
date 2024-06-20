@@ -24,12 +24,14 @@ function linkify (fanclub, scope, processor, popup) {
 
     if (url.match('login')) {
       event.preventDefault();
+      localStorage.setItem('universeLoginTime', Date.now());
       module.exports.prompt(fanclub, url, processor, popup);
     } else if (url.match('logout')) {
       localStorage.removeItem('universeAccessToken');
       localStorage.removeItem('universeAccessTokenExpiration');
       localStorage.removeItem('universeRefreshToken');
       localStorage.removeItem('universeRefreshTokenExpiration');
+      localStorage.removeItem('universeLoginTime');
     }
   });
 };

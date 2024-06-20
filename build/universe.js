@@ -34,14 +34,14 @@ Universe.prototype.init = function(callback) {
   var data = {};
 
   getFanclub.call(self, function(err, fanclub) {
-    data.fanclub = fanclub;
+    self.fanclub = data.fanclub = fanclub;
     if (err) {
       if (callback) callback(err, data);
       return setTimeout(function() {self.emit('error', err)}, 0);
     }
 
     getCustomer.call(self, function(err, customer) {
-      data.customer = customer;
+      self.customer = data.customer = customer;
       if (callback) callback(err, data);
       if (!err) setTimeout(function() {self.emit('ready', data)}, 0);
     });
@@ -96,8 +96,8 @@ Universe.prototype.linkify = function(scope, processor) {
 // PRIVATE
 
 var getFanclub = function(callback) {
-  if (this.context && this.context.resources && this.context.resources.fanclub) {
-    callback(null, this.context.resources.fanclub.fanclub);
+  if (this.fanclub || (this.context && this.context.resources && this.context.resources.fanclub)) {
+    callback(null, this.fanclub || this.context.resources.fanclub.fanclub);
   } else {
     this.get('/fanclub', function(err, data) {
       callback(err, data ? data.fanclub : null);
@@ -107,7 +107,10 @@ var getFanclub = function(callback) {
 
 var getCustomer = function(callback) {
   if (!this.useJWT || localStorage.getItem('universeAccessToken')) {
-    this.get('/account', function(err, data) {
+    // When logged in, add the login time to the /account query, to prevent the
+    // browser from serving a cached "logged out" response (and vice-versa)
+    this.get(localStorage.getItem('universeLoginTime') ? '/account?t=' + localStorage.getItem('universeLoginTime').toString() : '/account', function(err, data) {
+      if (!err && data && !data.customer) localStorage.removeItem('universeLoginTime');
       callback(err, data ? data.customer : null);
     });
   } else {
@@ -160,6 +163,7 @@ var validateTokens = function(callback) {
     // Valid access token
     return callback();
   } else {
+    // Missing or expired access token
     localStorage.removeItem('universeAccessToken');
     localStorage.removeItem('universeAccessTokenExpiration');
   }
@@ -168,6 +172,7 @@ var validateTokens = function(callback) {
     // Missing or expired refresh token
     localStorage.removeItem('universeRefreshToken');
     localStorage.removeItem('universeRefreshTokenExpiration');
+    localStorage.removeItem('universeLoginTime');
     return callback(true);
   }
 
@@ -179,6 +184,7 @@ var validateTokens = function(callback) {
         // Invalid refresh token
         localStorage.removeItem('universeRefreshToken');
         localStorage.removeItem('universeRefreshTokenExpiration');
+        localStorage.removeItem('universeLoginTime');
       }
       callback(err);
     } else {
@@ -263,12 +269,14 @@ function linkify (fanclub, scope, processor, popup) {
 
     if (url.match('login')) {
       event.preventDefault();
+      localStorage.setItem('universeLoginTime', Date.now());
       module.exports.prompt(fanclub, url, processor, popup);
     } else if (url.match('logout')) {
       localStorage.removeItem('universeAccessToken');
       localStorage.removeItem('universeAccessTokenExpiration');
       localStorage.removeItem('universeRefreshToken');
       localStorage.removeItem('universeRefreshTokenExpiration');
+      localStorage.removeItem('universeLoginTime');
     }
   });
 };

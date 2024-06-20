@@ -15,6 +15,7 @@
     localStorage.removeItem('universeAccessTokenExpiration');
     localStorage.removeItem('universeRefreshToken');
     localStorage.removeItem('universeRefreshTokenExpiration');
+    localStorage.removeItem('universeLoginTime');
 
     var redirect = document.getElementById('redirect');
     redirect.href = '{{{ fanclub.links.logout }}}' || '/';

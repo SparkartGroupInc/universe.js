@@ -41,6 +41,14 @@ describe('Universe', function() {
     Math.random = random;
   });
 
+  beforeEach(function() {
+    localStorage.removeItem('universeLoginTime');
+  })
+
+  afterEach(function() {
+    localStorage.removeItem('universeLoginTime');
+  });
+
   describe('JWTs', function() {
     beforeEach(login);
     afterEach(logout);
@@ -75,6 +83,26 @@ describe('Universe', function() {
         universe.init(function(err, data) {
           assert.ifError(err);
           assert.deepEqual(data, {fanclub: 'exists!', customer: 'me!'});
+          done();
+        });
+      });
+
+      it('after a login state change', function(done) {
+        localStorage.setItem('universeLoginTime', Date.now());
+
+        var callbackCalled;
+        var universe = new Universe({environment: 'test', key: '12345'});
+        universe.init(function(err, data) {
+          assert.ifError(err);
+          assert.deepEqual(data, {fanclub: 'demo!', customer: 'me! not cached'});
+          callbackCalled = true;
+        });
+        universe.on('error', function(err) {
+          assert(false);
+        });
+        universe.on('ready', function(data) {
+          assert(callbackCalled);
+          assert.deepEqual(data, {fanclub: 'demo!', customer: 'me! not cached'});
           done();
         });
       });
@@ -390,6 +418,26 @@ describe('Universe', function() {
         universe.init(function(err, data) {
           assert.ifError(err);
           assert.deepEqual(data, {fanclub: 'exists!', customer: 'me!'});
+          done();
+        });
+      });
+
+      it('after a login state change', function(done) {
+        localStorage.setItem('universeLoginTime', Date.now());
+
+        var callback_called;
+        var universe = new Universe({apiUrl: config.sameSiteUrlLoggedIn, key: '12345'});
+        universe.init(function(err, data) {
+          assert.ifError(err);
+          assert.deepEqual(data, {fanclub: 'demo!', customer: 'me! not cached'});
+          callback_called = true;
+        });
+        universe.on('error', function(err) {
+          assert(false);
+        });
+        universe.on('ready', function(data) {
+          assert(callback_called);
+          assert.deepEqual(data, {fanclub: 'demo!', customer: 'me! not cached'});
           done();
         });
       });
